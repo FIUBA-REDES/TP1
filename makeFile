@@ -1,0 +1,59 @@
+SHELL := /bin/bash
+VENV := venv
+PYTHON := $(VENV)/bin/python
+PIP := $(VENV)/bin/pip
+FLAKE8 := $(VENV)/bin/flake8
+
+.PHONY: all setup install-deps venv init-project lint test-mininet run-mininet clean
+
+all: setup
+
+# 1. Instala paquetes del sistema requeridos (requiere sudo)
+install-deps:
+	sudo apt update
+	sudo apt install -y mininet openvswitch-switch python3 python3-pip python3-venv wireshark iproute2
+
+# 2. Crea el entorno virtual e instala flake8
+venv:
+	@if [ ! -d "$(VENV)" ]; then \
+		python3 -m venv $(VENV); \
+		$(PIP) install --upgrade pip; \
+		$(PIP) install flake8; \
+	fi
+
+# 3. Crea la estructura de carpetas, módulos y permisos solicitados
+init-project: venv
+	mkdir -p src/lib
+	touch README.md
+	touch src/lib/__init__.py
+	@if [ ! -f src/upload ]; then \
+		echo -e '#!/usr/bin/env python3\nimport argparse\n\ndef main():\n    pass\n\nif __name__ == "__main__":\n    main()' > src/upload; \
+	fi
+	@if [ ! -f src/download ]; then \
+		echo -e '#!/usr/bin/env python3\nimport argparse\n\ndef main():\n    pass\n\nif __name__ == "__main__":\n    main()' > src/download; \
+	fi
+	@if [ ! -f src/start-server ]; then \
+		echo -e '#!/usr/bin/env python3\nimport argparse\n\ndef main():\n    pass\n\nif __name__ == "__main__":\n    main()' > src/start-server; \
+	fi
+	chmod +x src/upload src/download src/start-server
+
+# Configuración inicial completa
+setup: install-deps init-project
+
+# Ejecuta el linter PEP8 exigido por la cátedra
+lint:
+	$(FLAKE8) src/
+
+# Test básico de conectividad de Mininet
+test-mininet:
+	sudo mn --test pingall
+
+# Levanta Mininet con las condiciones pedidas (10% pérdida y 20ms de delay por enlace)
+run-mininet:
+	sudo mn --topo single,2 --link tc,loss=10,delay=20ms
+
+# Limpieza del entorno y sockets residuales de Mininet
+clean:
+	sudo mn -c
+	rm -rf $(VENV)
+	find . -type d -name "__pycache__" -exec rm -rf {} +
