@@ -34,22 +34,22 @@ class Packet:
         )
         return header + self.payload
       
-##TODO: Falta terminar esta función para decodear 
 # Convierte una secuencia de bytes en un paquete
     def decode(cls, raw_bytes: bytes): #Es otro constructor
         raw_bytes[0:2]
         opcode = int.from_bytes(raw_bytes[0:Packet.OPCODE_SIZE], byteorder="big")
         seq_num = int.from_bytes(raw_bytes[Packet.OPCODE_SIZE:(Packet.OPCODE_SIZE+Packet.SEQ_SIZE)], byteorder="big")
-        ack_num = int.from_bytes()
+        ack_num = int.from_bytes(raw_bytes[(Packet.OPCODE_SIZE+Packet.SEQ_SIZE):(Packet.OPCODE_SIZE+Packet.SEQ_SIZE+Packet.ACK_SIZE)], byteorder="big")
+        payload = raw_bytes[Packet.HEADER_SIZE:]
 
-        return Packet(opcode=opcode, seq_num=seq_num, ack_num=ack_num, payload=) 
-    
+        return Packet(opcode=opcode, seq_num=seq_num, ack_num=ack_num, payload=payload) 
+   
         
 
 def handshake_start() -> Packet:
     return Packet(opcode=Packet.OP_START, seq_num=0, ack_num=0, payload=b'')
 
-def handshake_ack(seq_num: int) -> Packet:
+def ack(seq_num: int) -> Packet:
     return Packet(opcode=Packet.OP_ACK, seq_num=seq_num, ack_num=0, payload=b'')
 
 def session_end(seq_num: int) -> Packet:

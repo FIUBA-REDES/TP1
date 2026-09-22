@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import argparse
 import socket
+from lib.protocol import Packet
 
-
-def crear socket(host, port):
+def create_socket(host, port):
     
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((host, port))
@@ -19,20 +19,21 @@ def main():
     parser.add_argument("-H", "--host", type=str, default="127.0.0.1", help="IP al que se quiere conectar")
     parser.add_argument("-p", "--port", type=int, default= 5005, help="Puerto al que se quiere conectar")
     
-
     args = parser.parse_args()
 
-    socket_listening = crear_socket(args.host, args.port)
+    listener_socket = create_socket(args.host, args.port)
     
     while True:
   
-        data, addr = socket.recvfrom(1024)   
+        data, addr = listener_socket.recvfrom(1024)   
         packet = Packet.decode(data)
 
         if packet.opcode == Packet.OP_START:
 
             socketUDP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
+            ''' Para mas de una sesion
+            socketUDP.bind(("", 0))
+            session_port = socketUDP.getsockname()[1] '''
             session = session(server_socket=socketUDP, client_socket=addr, packet=packet, args=args)
             session.start_session()
             
