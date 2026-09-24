@@ -1,15 +1,6 @@
 #!/usr/bin/env python3
 import argparse
-import socket
-from lib.protocol import Packet
-
-def create_socket(host, port):
-    
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((host, port))
-    sock.listen(5)
-    return sock
-
+from lib.file_transfer_server import FileTransferServer
 
 def main():
     parser = argparse.ArgumentParser(description="File Transfer Server")
@@ -21,24 +12,14 @@ def main():
     
     args = parser.parse_args()
 
-    listener_socket = create_socket(args.host, args.port)
-    
-    while True:
-  
-        data, addr = listener_socket.recvfrom(1024)   
-        packet = Packet.decode(data)
+    server = FileTransferServer(host=args.host, port=args.port)
 
-        if packet.opcode == Packet.OP_START:
-
-            socketUDP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            ''' Para mas de una sesion
-            socketUDP.bind(("", 0))
-            session_port = socketUDP.getsockname()[1] '''
-            session = session(server_socket=socketUDP, client_socket=addr, packet=packet, args=args)
-            session.start_session()
-            
-        elif packet.opcode == Packet.OP_DATA:
-            session.update_session(packet)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.stop()
 
 
 
