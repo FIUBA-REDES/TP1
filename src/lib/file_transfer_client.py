@@ -15,7 +15,7 @@ class FileTransferClient:
         self.transport.send(handshake_start(), self.server_address)
         self.connected = True
 
-    def upload(self, source_path, remote_name=None):
+    def upload(self, source_path, remote_name=None, protocolo=None):
         """Upload a local file to the server."""
         raise NotImplementedError
 
