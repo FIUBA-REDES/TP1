@@ -35,6 +35,7 @@ class Packet:
         return header + self.payload
       
 # Convierte una secuencia de bytes en un paquete
+    @classmethod
     def decode(cls, raw_bytes: bytes): #Es otro constructor
         raw_bytes[0:2]
         opcode = int.from_bytes(raw_bytes[0:Packet.OPCODE_SIZE], byteorder="big")
@@ -42,7 +43,7 @@ class Packet:
         ack_num = int.from_bytes(raw_bytes[(Packet.OPCODE_SIZE+Packet.SEQ_SIZE):(Packet.OPCODE_SIZE+Packet.SEQ_SIZE+Packet.ACK_SIZE)], byteorder="big")
         payload = raw_bytes[Packet.HEADER_SIZE:]
 
-        return Packet(opcode=opcode, seq_num=seq_num, ack_num=ack_num, payload=payload) 
+        return cls(opcode=opcode, seq_num=seq_num, ack_num=ack_num, payload=payload)
    
         
 
