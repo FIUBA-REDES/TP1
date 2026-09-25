@@ -20,15 +20,16 @@ def main():
     ip_servidor = args.host
     port_servidor = args.port
     src_archivo = args.src
+    name_archivo = args.name
     protocolo = args.protocol
     #print(f"Conectando al servidor en la dirección: {ip_servidor} en el puerto {port_servidor}...")
 
     #AF_INET es para IPV4
     #SOCK_DGRAM es para UDP
-    cliente = FileTransferClient(ip_servidor, port_servidor, protocolo)
+    cliente = FileTransferClient(ip_servidor, port_servidor)
     cliente.connect()
 
-    cliente.upload(src_archivo)
+    cliente.upload(src_archivo, name_archivo, protocolo)
 
 if __name__ == "__main__":
     main()
