@@ -24,8 +24,6 @@ def main():
     protocolo = args.protocol
     #print(f"Conectando al servidor en la dirección: {ip_servidor} en el puerto {port_servidor}...")
 
-    #AF_INET es para IPV4
-    #SOCK_DGRAM es para UDP
     cliente = FileTransferClient(ip_servidor, port_servidor)
     cliente.connect()
 

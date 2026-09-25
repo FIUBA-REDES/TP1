@@ -19,7 +19,7 @@ class FileTransferClient:
         """Upload a local file to the server."""
         raise NotImplementedError
 
-    def download(self, remote_name, destination_path):
+    def download(self, destination_path, remote_name=None, protocol=None):
         """Download a file from the server."""
         raise NotImplementedError
 
