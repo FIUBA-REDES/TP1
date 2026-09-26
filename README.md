@@ -99,3 +99,70 @@ make lint
 make test-mininet
 make run-mininet
 ```
+
+## Diagrama de secuencia de Stop & Wait:
+```mermaid
+sequenceDiagram
+    autonumber
+    
+    box rgb(40, 44, 52) Entorno Cliente
+        participant CLI as upload.py
+        participant FTC as FileTransferClient
+        participant SAW as StopAndWait
+    end
+    
+    box rgb(60, 64, 72) Capa de Red
+        participant UDP as UdpTransport
+    end
+    
+    box rgb(40, 44, 52) Entorno Servidor
+        participant FTS as FileTransferServer
+        participant SES as session.py
+    end
+
+    Note over CLI,SES: --- FASE 1: HANDSHAKE (Inicio de conexión) ---
+    CLI->>FTC: cliente.upload("archivo.bin")
+    FTC->>UDP: transport.send(OP_START, Metadata)
+    UDP->>FTS: Viaja por Mininet
+    FTS->>SES: Crea nueva sesión para el archivo
+    SES-->>UDP: Retorna OP_ACK (Sec: 0)
+    UDP-->>FTC: Confirma inicio de transferencia
+
+    Note over CLI,SES: --- FASE 2: TRANSFERENCIA CONFIABLE ---
+    FTC->>SAW: upload_file() (Delega el control)
+    
+    loop Lectura del Disco y Envío
+        SAW->>UDP: transport.send(OP_DATA, Bloque 1, Sec: 0)
+        activate SAW
+        Note right of SAW: ⏱️ Timer ON (socket.settimeout)
+        UDP->>FTS: Viaja por Mininet
+        FTS->>SES: Guarda fragmento en buffer local
+        SES-->>UDP: Retorna OP_ACK (Sec: 0)
+        UDP-->>SAW: Retorna ACK al emisor
+        deactivate SAW
+        Note right of SAW: 🛑 Timer OFF. Espera Sec: 1
+        
+        SAW->>UDP: transport.send(OP_DATA, Bloque 2, Sec: 1)
+        activate SAW
+        Note right of SAW: ⏱️ Timer ON
+        Note over UDP,FTS: 💥 PÉRDIDA: El paquete se pierde en el 10% de loss
+        Note right of SAW: ⏰ TIMEOUT: Expira el timer (socket.timeout)
+        SAW->>UDP: 🔄 Retransmite(OP_DATA, Bloque 2, Sec: 1)
+        UDP->>FTS: Viaja por Mininet
+        FTS->>SES: Guarda fragmento en buffer local
+        SES-->>UDP: Retorna OP_ACK (Sec: 1)
+        UDP-->>SAW: Retorna ACK al emisor
+        deactivate SAW
+        Note right of SAW: 🛑 Timer OFF. Espera Sec: 0
+    end
+    
+    SAW-->>FTC: Archivo enviado por completo (return)
+
+    Note over CLI,SES: --- FASE 3: FIN DE SESIÓN ---
+    FTC->>UDP: transport.send(OP_FIN)
+    UDP->>FTS: Viaja por Mininet
+    FTS->>SES: self.completed = True (Cierra archivo)
+    SES-->>UDP: Retorna OP_ACK
+    UDP-->>FTC: Desconecta
+    FTC->>CLI: Termina ejecución (exit)
+```
