@@ -17,8 +17,22 @@ class FileTransferClient:
 
     def upload(self, source_path, remote_name=None, protocolo=None):
         """Upload a local file to the server."""
-        raise NotImplementedError
-
+        #raise NotImplementedError
+        if protocolo == "stop-and-wait":
+            if StopAndWait.send(self.transport, source_path) == False:
+                print("Error: Failed to send the file using Stop-and-Wait protocol.")
+                return
+            else:
+                print(f"File '{source_path}' sent successfully using Stop-and-Wait protocol.")
+            
+        elif protocolo == "go-back-n":
+            # Implement Go-Back-N protocol here
+        else:
+            # Implement Selective Repeat protocol here
+            pass
+        else:
+            raise ValueError("Invalid protocol specified. Choose 'stop-and-wait', 'go-back-n', or 'selective-repeat'.")
+            
     def download(self, destination_path, remote_name=None, protocol=None):
         """Download a file from the server."""
         raise NotImplementedError

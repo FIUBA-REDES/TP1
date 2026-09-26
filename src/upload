@@ -1,9 +1,13 @@
 import argparse
 from lib.protocol import Packet 
 from lib.file_transfer_client import FileTransferClient
+import os.path
 
+LAST_WELL_KNOWN_PORT = 1023
 
 def main():
+
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-h", "--help", help = "Show this help message and exit")
@@ -18,10 +22,36 @@ def main():
     args = parser.parse_args()
 
     ip_servidor = args.host
+    if ip_servidor is None:
+        print("Error: The server IP address is not specified.")
+        return
+
+
     port_servidor = args.port
+    if port_servidor is None:
+        print("Error: The server port is not specified.")
+        return
+    else:
+        if port_servidor <= LAST_WELL_KNOWN_PORT or port_servidor > 65535:
+            print("Error: The server port is not valid.")
+            return
+
+
     src_archivo = args.src
+    if os.path.isfile(src_archivo) == False:
+        print(f"Error: The source file '{src_archivo}' does not exist.")
+        return
+
+        
     name_archivo = args.name
+    if name_archivo is None:
+        printf(f"Error: The name of the file to be sent is not specified.")
+        return
+    
     protocolo = args.protocol
+    if protocolo not in ["stop-and-wait", "go-back-n", "selective-repeat"]:
+        print("Error: Invalid protocol. Please choose one of the following: stop-and-wait, go-back-n, selective-repeat")
+        return
     #print(f"Conectando al servidor en la dirección: {ip_servidor} en el puerto {port_servidor}...")
 
     cliente = FileTransferClient(ip_servidor, port_servidor)
