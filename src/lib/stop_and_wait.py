@@ -1,6 +1,7 @@
 from .transport import UdpTransport
-from .transport import MAX_TRIES
 from .protocol import Packet
+
+MAX_TRIES = 5
 
 class StopAndWait:
 
@@ -12,16 +13,17 @@ class StopAndWait:
         while data:
             
         
-            transport.send(packet, server_address)
-            
-            ack, address = transport.receive()
-            if ack is None and address is None:  # Si se recibe un ACK invalido
+            ack = None
+            for _ in range(MAX_TRIES):
+                transport.send(packet, server_address)
+                ack, address = transport.receive()
+                if ack is not None:
+                    print(f"ACK recibido del servidor: {ack}")
+                    break
+
+            if ack is None:
                 print("No se recibió ACK del servidor en " + str(MAX_TRIES) + " intentos.")
                 return False
-            
-            if ack is not None:  # Si se recibe un ACK válido
-                print(f"ACK recibido del servidor: {ack}")
-            #si no llega el ack, se vuelve a enviar el paquete MAX_TRIES veces
 
             data=file.read(1024)
             if not data:  # Si no hay más datos para enviar, salir del bucle

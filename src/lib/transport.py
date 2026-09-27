@@ -2,11 +2,7 @@ import socket
 
 from .protocol import Packet
 
-MAX_TRIES = 5
-
-# Permite importarla desde stop_and_wait con:
-# from .transport import MAX_TRIES
-__all__ = ["UdpTransport", "MAX_TRIES"]
+__all__ = ["UdpTransport"]
 
 class UdpTransport:
 	
@@ -36,19 +32,7 @@ class UdpTransport:
 
 
 	def receive(self, buffer_size=65535):
-
-		tries = 0
-		while tries < MAX_TRIES:
-			try_receive = self.try_receive(buffer_size)
-			if try_receive[0] is not None:
-				return try_receive
-			tries += 1
-
-		return None, None
-
-		
-		data, address = self.socket.recvfrom(buffer_size)
-		return Packet.decode(data), address
+		return self.try_receive(buffer_size)
 
 	def set_timeout(self, timeout):
 		self.socket.settimeout(timeout)
