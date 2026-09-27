@@ -8,7 +8,7 @@ VALID_PROTOCOLS = ("stop-and-wait", "go-back-n", "selective-repeat")
 
 def verify_server_address(host, port):
     """Verify that a host and port can be used by the application."""
-    if not isinstance(host, str) or not host.strip():
+    if host is None or not isinstance(host, str) or not host.strip():
         print("Error: The server host is not specified.")
         return False
 
@@ -22,15 +22,19 @@ def verify_server_address(host, port):
         print("Error: The server host must be an IPv4 address.")
         return False
 
-    if not isinstance(port, int) or isinstance(port, bool):
+    if port is None:
         print("Error: The server port is not specified.")
         return False
 
-    if (
-        port <= LAST_WELL_KNOWN_PORT
-        or port > MAX_PORT
-        or port in COLLECTION_OF_NOT_KNOWN_USED_PORTS
-    ):
+    if not isinstance(port, int) or isinstance(port, bool):
+        print("Error: The server port is not valid.")
+        return False
+
+    if port <= LAST_WELL_KNOWN_PORT or port > MAX_PORT:
+        print("Error: The server port is not valid.")
+        return False
+
+    if port in COLLECTION_OF_NOT_KNOWN_USED_PORTS:
         print("Error: The server port is not valid.")
         return False
 
@@ -42,23 +46,18 @@ def verify_client_args(args):
     if not verify_server_address(args.host, args.port):
         return False
 
-    source_path = getattr(args, "src", None)
-    destination_path = getattr(args, "dst", None)
-
-    if source_path is not None:
-        if os.path.isdir(source_path):
-            print(f"Error: The source path '{source_path}' is a directory.")
+    if hasattr(args, "src") and args.src is not None:
+        if os.path.isdir(args.src):
+            print(f"Error: The source path '{args.src}' is a directory.")
             return False
-        if not os.path.isfile(source_path):
-            print(f"Error: The source file '{source_path}' does not exist.")
+        if os.path.isfile(args.src) == False:
+            print(f"Error: The source file '{args.src}' does not exist.")
             return False
-    elif destination_path is not None:
-        if os.path.isdir(destination_path):
-            print(
-                f"Error: The destination path '{destination_path}' is a directory."
-            )
+    elif hasattr(args, "dst") and args.dst is not None:
+        if os.path.isdir(args.dst):
+            print(f"Error: The destination path '{args.dst}' is a directory.")
             return False
-        destination_directory = os.path.dirname(destination_path) or "."
+        destination_directory = os.path.dirname(args.dst) or "."
         if not os.path.isdir(destination_directory):
             print(
                 f"Error: The destination directory "
@@ -91,5 +90,8 @@ def verify_client_args(args):
 
 def verify_server_args(args):
     """Verify the command-line arguments for the server."""
-    return verify_server_address(args.host, args.port)
+    if verify_server_address(args.host, args.port) == False:
+        return False
+
+    return True
 

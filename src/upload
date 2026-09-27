@@ -1,13 +1,8 @@
 import argparse
-from lib import args_verifier
 from lib.file_transfer_client import FileTransferClient
 import lib.args_verifier as args_verifier
 
-LAST_WELL_KNOWN_PORT = 1023
-
 def main():
-
-
     parser = argparse.ArgumentParser()
 
     #parser.add_argument("-h", "--help", help = "Show this help message and exit")

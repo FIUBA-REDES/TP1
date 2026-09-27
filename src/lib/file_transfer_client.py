@@ -39,7 +39,11 @@ class FileTransferClient:
         """Download a file from the server."""
         
         if protocol == "stop-and-wait":
-            
+            if StopAndWait.receive(self.transport, destination_path, self.server_address) == False:
+                print("Error: Failed to receive the file using Stop-and-Wait protocol.")
+                return
+            else:
+                print(f"File '{destination_path}' received successfully using Stop-and-Wait protocol.")
         elif protocol == "go-back-n":
             # Implement Go-Back-N download logic here
             pass
