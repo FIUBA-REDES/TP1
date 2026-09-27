@@ -1,9 +1,7 @@
 import argparse
 from lib import args_verifier
-from lib.protocol import Packet 
 from lib.file_transfer_client import FileTransferClient
-import os.path
-
+import lib.args_verifier as args_verifier
 
 LAST_WELL_KNOWN_PORT = 1023
 

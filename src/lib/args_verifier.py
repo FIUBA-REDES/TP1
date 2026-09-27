@@ -1,38 +1,95 @@
-
+import ipaddress
 import os
-from upload import LAST_WELL_KNOWN_PORT
+LAST_WELL_KNOWN_PORT = 1023
+MAX_PORT = 65535
+COLLECTION_OF_NOT_KNOWN_USED_PORTS = (8080,)
+VALID_PROTOCOLS = ("stop-and-wait", "go-back-n", "selective-repeat")
+
+
+def verify_server_address(host, port):
+    """Verify that a host and port can be used by the application."""
+    if not isinstance(host, str) or not host.strip():
+        print("Error: The server host is not specified.")
+        return False
+
+    try:
+        address = ipaddress.ip_address(host.strip())
+    except ValueError:
+        print("Error: The server host is not a valid IP address.")
+        return False
+
+    if not isinstance(address, ipaddress.IPv4Address):
+        print("Error: The server host must be an IPv4 address.")
+        return False
+
+    if not isinstance(port, int) or isinstance(port, bool):
+        print("Error: The server port is not specified.")
+        return False
+
+    if (
+        port <= LAST_WELL_KNOWN_PORT
+        or port > MAX_PORT
+        or port in COLLECTION_OF_NOT_KNOWN_USED_PORTS
+    ):
+        print("Error: The server port is not valid.")
+        return False
+
+    return True
 
 
 def verify_client_args(args):
-    """Verify the command-line arguments for the client."""
+    """Verify the command-line arguments for upload or download."""
+    if not verify_server_address(args.host, args.port):
+        return False
 
-    if args.host is None:
-        print("Error: The server IP address is not specified.")
-        return
+    source_path = getattr(args, "src", None)
+    destination_path = getattr(args, "dst", None)
 
-
-    if  is None:
-        print("Error: The server port is not specified.")
-        return
+    if source_path is not None:
+        if os.path.isdir(source_path):
+            print(f"Error: The source path '{source_path}' is a directory.")
+            return False
+        if not os.path.isfile(source_path):
+            print(f"Error: The source file '{source_path}' does not exist.")
+            return False
+    elif destination_path is not None:
+        if os.path.isdir(destination_path):
+            print(
+                f"Error: The destination path '{destination_path}' is a directory."
+            )
+            return False
+        destination_directory = os.path.dirname(destination_path) or "."
+        if not os.path.isdir(destination_directory):
+            print(
+                f"Error: The destination directory "
+                f"'{destination_directory}' does not exist."
+            )
+            return False
     else:
-        if port_servidor <= LAST_WELL_KNOWN_PORT or port_servidor > 65535:
-            print("Error: The server port is not valid.")
-            return
+        print("Error: A source or destination file is required.")
+        return False
 
 
 
 
-    if os.path.isfile(args.src) == False:
-        print(f"Error: The source file '{args.src}' does not exist.")
-        return
+    if not isinstance(args.name, str) or not args.name.strip():
+        print("Error: The file name is not specified.")
+        return False
+    if os.path.basename(args.name) != args.name:
+        print("Error: The file name must not contain directories.")
+        return False
+
+    if args.protocol not in VALID_PROTOCOLS:
+        print(
+            "Error: Invalid protocol. Please choose one of the following: "
+            "stop-and-wait, go-back-n, selective-repeat"
+        )
+        return False
+
+    return True
 
 
-    name_archivo = args.name
-    if name_archivo is None:
-        print(f"Error: The name of the file to be sent is not specified.")
-        return
-    
-    protocolo = args.protocol
-    if protocolo not in ["stop-and-wait", "go-back-n", "selective-repeat"]:
-        print("Error: Invalid protocol. Please choose one of the following: stop-and-wait, go-back-n, selective-repeat")
-        return
+def verify_server_args(args):
+    """Verify the command-line arguments for the server."""
+    return verify_server_address(args.host, args.port)
+
