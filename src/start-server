@@ -21,28 +21,5 @@ def main():
     finally:
         server.stop()
 
-
-
-"""
-
-            print(f"Handshake iniciado desde {addr}")
-            ack_packet = handshake_ack(packet.seq_num)
-            socket.sendto(ack_packet.encode(), addr)
-            print(f"Enviando ACK al cliente {addr}")
-        elif packet.opcode == Packet.OP_DATA:
-            print(f"Recibiendo datos del cliente {addr}")
-            # Aquí se procesarían los datos recibidos
-            ack_packet = handshake_ack(packet.seq_num)
-            socket.sendto(ack_packet.encode(), addr)
-            print(f"Enviando ACK al cliente {addr}")
-"""
-
-
-
-
-
-
-
-
 if __name__ == "__main__":
     main()
