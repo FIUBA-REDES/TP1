@@ -4,7 +4,7 @@ PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 FLAKE8 := $(VENV)/bin/flake8
 
-.PHONY: all setup install-deps venv init-project lint test-mininet run-mininet clean
+.PHONY: all setup install-deps ensure-deps venv init-project lint check-mininet test-mininet run-mininet clean
 
 all: setup
 
@@ -37,19 +37,35 @@ init-project: venv
 	fi
 	chmod +x src/upload src/download src/start-server
 
+# Instala únicamente las dependencias que todavía no estén disponibles
+ensure-deps:
+	@if ! command -v mn >/dev/null 2>&1 || ! dpkg -s openvswitch-switch >/dev/null 2>&1; then \
+		$(MAKE) install-deps; \
+	fi
+	@if [ ! -x "$(VENV)/bin/flake8" ]; then \
+		$(MAKE) venv; \
+	fi
+
 # Configuración inicial completa
-setup: install-deps init-project
+setup: ensure-deps init-project
 
 # Ejecuta el linter PEP8 exigido por la cátedra
-lint:
+lint: ensure-deps
 	$(FLAKE8) src/
 
+check-mininet: ensure-deps
+	@if ! command -v mn >/dev/null 2>&1; then \
+		echo "Error: Mininet no está instalado."; \
+		echo "Ejecutá: make install-deps"; \
+		exit 1; \
+	fi
+
 # Test básico de conectividad de Mininet
-test-mininet:
+test-mininet: check-mininet
 	sudo mn --test pingall
 
 # Levanta Mininet con las condiciones pedidas (10% pérdida y 20ms de delay por enlace)
-run-mininet:
+run-mininet: check-mininet
 	sudo mn --topo single,2 --link tc,loss=10,delay=20ms
 
 # Limpieza del entorno y sockets residuales de Mininet

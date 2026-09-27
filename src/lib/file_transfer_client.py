@@ -20,7 +20,7 @@ class FileTransferClient:
         """Upload a local file to the server."""
         #raise NotImplementedError
         if protocolo == "stop-and-wait":
-            if StopAndWait.send(self.transport, source_path) == False:
+            if StopAndWait.send(self.transport, source_path, self.server_address) == False:
                 print("Error: Failed to send the file using Stop-and-Wait protocol.")
                 return
             else:
