@@ -48,10 +48,10 @@ La asignación combina implementación, pruebas y documentación para que cada i
 
 - [ ] Completar Stop-and-Wait.
   - [x] Retransmitir el paquete cuando vence el timeout.
-  - [ ] Validar que el ACK corresponda al número de secuencia enviado.
-  - [ ] Retransmitir el handshake si no llega su ACK.
-  - [ ] Retransmitir el paquete `FIN` si no llega su ACK.
-  - [ ] Enviar `OP_FIN` al terminar el archivo.
+  - [x] Validar que el ACK corresponda al número de secuencia enviado.
+  - [x] Retransmitir el handshake si no llega su ACK.
+  - [x] Retransmitir el paquete `FIN` si no llega su ACK.
+  - [x] Enviar `OP_FIN` al terminar el archivo.
   - [x] Limitar la cantidad de retransmisiones.
   - [ ] Cerrar correctamente los archivos con `with open(...)`.
 - [ ] Implementar Go-Back-N.
