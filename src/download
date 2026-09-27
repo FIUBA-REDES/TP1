@@ -16,17 +16,14 @@ def main():
 
     args = parser.parse_args()
 
-    ip_servidor = args.host
-    port_servidor = args.port
-    dst_archivo = args.dst
-    name_archivo = args.name
-    protocolo = args.protocol
-    #print(f"Conectando al servidor en la dirección: {ip_servidor} en el puerto {port_servidor}...")
+    args_verifier = args_verifier.verify_client_args(args)
+    if args_verifier == False:
+        return
 
-    cliente = FileTransferClient(ip_servidor, port_servidor)
+    cliente = FileTransferClient(args.host, args.port)
     cliente.connect()
 
-    cliente.download(dst_archivo, name_archivo, protocolo)
+    cliente.download(args.dst, args.name, args.protocol)
 
 if __name__ == "__main__":
     main()
