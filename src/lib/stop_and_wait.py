@@ -13,7 +13,7 @@ class StopAndWait:
             transport.send(packet, transport.server_address)
             
             ack, address = transport.receive()
-            if ack is None,None:  # Si se recibe un ACK invalido
+            if ack is None and address is None:  # Si se recibe un ACK invalido
                 print("No se recibió ACK del servidor en " + str(MAX_TRIES) + " intentos.")
                 return False
             

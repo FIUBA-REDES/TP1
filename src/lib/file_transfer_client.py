@@ -1,6 +1,7 @@
 from .protocol import handshake_start
 from .transport import UdpTransport
 
+from .stop_and_wait import StopAndWait
 
 class FileTransferClient:
     """Client skeleton for uploading and downloading files over UDP."""
@@ -27,7 +28,8 @@ class FileTransferClient:
             
         elif protocolo == "go-back-n":
             # Implement Go-Back-N protocol here
-        else:
+            pass
+        elif protocolo == "selective-repeat":
             # Implement Selective Repeat protocol here
             pass
         else:
