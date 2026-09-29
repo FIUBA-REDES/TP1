@@ -6,55 +6,61 @@ MAX_TRIES = 5
 class StopAndWait:
 
     def send(transport, file_path, server_address):
-        
-        file = open(file_path, "rb")
-        data = file.read(1024)
-        packet = Packet(Packet.OP_DATA, 0, 0, data)
-        
-        while data:
-            
-            ack_ok = False
-
+        def send_and_wait(packet):
             for _ in range(MAX_TRIES):
                 transport.send(packet, server_address)
-                ack, address = transport.receive()
 
-                if ack is not None and address == server_address and ack.opcode == Packet.OP_ACK and ack.seq_num == packet.seq_num:
-                    #valida que el ACK recibido es del servidor y tiene el número de secuencia correcto
-                    print(f"ACK recibido del servidor: {ack}")
-                    ack_ok = True
-                    break
+                ack_packet, address = transport.receive()
 
-            if not ack_ok:
-                print("No se recibió ACK del servidor en " + str(MAX_TRIES) + " intentos.")
-                return False
+                if (
+                    ack_packet is not None
+                    and address == server_address
+                    and ack_packet.opcode == Packet.OP_ACK
+                    and ack_packet.seq_num == packet.seq_num
+                ):
+                    print(f"ACK recibido: {ack_packet}")
+                    return True
 
+            return False
+
+        with open(file_path, "rb") as file:
             data = file.read(1024)
+            seq_num = 0
 
-            # Envio y rececpcion del paquete FIN cuando no hay más datos para enviar
-            if not data:
-                packet = Packet(Packet.OP_FIN, packet.seq_num + 1, 0, b"")
-                
-                ack_ok = False
+            while data:
+                packet = Packet(
+                    Packet.OP_DATA,
+                    seq_num,
+                    0,
+                    data
+                )
 
-                for _ in range(MAX_TRIES):
-                    transport.send(packet, server_address)
-                    ack, address = transport.receive()
-
-                    if ack is not None and address == server_address and ack.opcode == Packet.OP_ACK and ack.seq_num == packet.seq_num:
-                        print(f"ACK recibido del FIN: {ack}")
-                        ack_ok = True
-                        break
-
-                if not ack_ok:
-                    print("No se recibió ACK del FIN en " + str(MAX_TRIES) + " intentos.")
+                if not send_and_wait(packet):
+                    print(
+                        "No se recibió ACK del servidor en "
+                        + str(MAX_TRIES)
+                        + " intentos."
+                    )
                     return False
 
-                break
-            
-            packet = Packet(Packet.OP_DATA, packet.seq_num + 1, 0, data)
+                data = file.read(1024)
+                seq_num += 1
 
-        file.close()
+            fin_packet = Packet(
+                Packet.OP_FIN,
+                seq_num,
+                0,
+                b""
+            )
+
+            if not send_and_wait(fin_packet):
+                print(
+                    "No se recibió ACK del FIN en "
+                    + str(MAX_TRIES)
+                    + " intentos."
+                )
+                return False
+
         return True
 
     def receive(transport):

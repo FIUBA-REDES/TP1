@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+import os
 import argparse
 from lib.file_transfer_server import FileTransferServer
 import lib.args_verifier as args_verifier
@@ -10,13 +12,16 @@ def main():
     group.add_argument("-q", "--quiet", action="store_true", help="decrease output verbosity")
     parser.add_argument("-H", "--host", type=str, default="127.0.0.1", help="IP al que se quiere conectar")
     parser.add_argument("-p", "--port", type=int, default= 5005, help="Puerto al que se quiere conectar")
-    
+    parser.add_argument("-s", "--storage", type=str, default="storage", help="Directorio donde guardar los archivos")
+
     args = parser.parse_args()
 
     if not args_verifier.verify_server_args(args):
         return
+    
+    os.makedirs(args.storage, exist_ok=True)
 
-    server = FileTransferServer(host=args.host, port=args.port)
+    server = FileTransferServer(host=args.host, port=args.port, storage_dir=args.storage)
 
     try:
         server.serve_forever()

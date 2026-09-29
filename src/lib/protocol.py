@@ -16,7 +16,7 @@ class Packet:
 
 #Un paquete tiene de campos: HEADER + PAYLOAD
 #HEADER = [OPCODE(1 Byte) + SEQNUMBER(4 Bytes) + ACKNUMBER(4 Bytes) + PAYLOAD_LENGHT(2 Bytes)]
-#Tamaño del Header = 11bits
+#Tamaño del Header = 11bytes
     def __init__(self, opcode: int, seq_num: int, ack_num:int, payload: bytes):
         self.opcode = opcode
         self.seq_num = seq_num
@@ -37,18 +37,27 @@ class Packet:
 # Convierte una secuencia de bytes en un paquete
     @classmethod
     def decode(cls, raw_bytes: bytes): #Es otro constructor
-        raw_bytes[0:2]
-        opcode = int.from_bytes(raw_bytes[0:Packet.OPCODE_SIZE], byteorder="big")
-        seq_num = int.from_bytes(raw_bytes[Packet.OPCODE_SIZE:(Packet.OPCODE_SIZE+Packet.SEQ_SIZE)], byteorder="big")
-        ack_num = int.from_bytes(raw_bytes[(Packet.OPCODE_SIZE+Packet.SEQ_SIZE):(Packet.OPCODE_SIZE+Packet.SEQ_SIZE+Packet.ACK_SIZE)], byteorder="big")
-        payload = raw_bytes[Packet.HEADER_SIZE:]
+        if len(raw_bytes) < cls.HEADER_SIZE:
+            raise ValueError("Paquete truncado: header incompleto.")
+        opcode = int.from_bytes(raw_bytes[0:cls.OPCODE_SIZE], byteorder="big")
+        seq_num = int.from_bytes(raw_bytes[cls.OPCODE_SIZE:(cls.OPCODE_SIZE + cls.SEQ_SIZE)], byteorder="big")
+        ack_num = int.from_bytes(raw_bytes[(cls.OPCODE_SIZE + cls.SEQ_SIZE):(cls.OPCODE_SIZE + cls.SEQ_SIZE + cls.ACK_SIZE)], byteorder="big")
+        payload_len = int.from_bytes(raw_bytes[cls.HEADER_SIZE - cls.LENGTH_SIZE:cls.HEADER_SIZE],byteorder="big")
+
+        if opcode not in (cls.OP_START,cls.OP_DATA,cls.OP_ACK,cls.OP_FIN,cls.OP_ERROR):
+            raise ValueError(f"Opcode inválido: {opcode}.")
+
+        if len(raw_bytes) != cls.HEADER_SIZE + payload_len:
+            raise ValueError("Payload incompleto o longitud inválida.")
+
+        payload = raw_bytes[cls.HEADER_SIZE:]
 
         return cls(opcode=opcode, seq_num=seq_num, ack_num=ack_num, payload=payload)
    
         
 
-def handshake_start() -> Packet:
-    return Packet(opcode=Packet.OP_START, seq_num=0, ack_num=0, payload=b'')
+def handshake_start(payload=b"") -> Packet:
+    return Packet(opcode=Packet.OP_START, seq_num=0, ack_num=0, payload=payload)
 
 def ack(seq_num: int) -> Packet:
     return Packet(opcode=Packet.OP_ACK, seq_num=seq_num, ack_num=0, payload=b'')

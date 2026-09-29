@@ -1,14 +1,17 @@
+import os
 from queue import Queue
-
+from sys import path
 from .protocol import Packet, ack
 
 
 class Session:
     """State and packet handling for one client transfer."""
 
-    def __init__(self, transport, client_address):
+    def __init__(self, transport, client_address, storage_dir=None):
         self.transport = transport
         self.client_address = client_address
+        self.storage_dir = storage_dir
+        self.remote_name = None
         self.packets = Queue()
         self.chunks = {}
         self.buffer = bytearray()
@@ -20,6 +23,7 @@ class Session:
         self.transport.send(ack(seq_num), self.client_address)
 
     def start_session(self, packet):
+        self.remote_name = packet.payload.decode("utf-8")
         self.send_ack(packet.seq_num)
 
     def enqueue(self, packet):
@@ -53,8 +57,19 @@ class Session:
 
         if packet.opcode == Packet.OP_FIN:
             self.completed = not self.chunks
+
             if self.completed:
                 self.file_bytes = bytes(self.buffer)
+
+                if self.storage_dir is not None and self.remote_name:
+                    path = os.path.join(
+                        self.storage_dir,
+                        self.remote_name
+                    )
+
+                    with open(path, "wb") as file:
+                        file.write(self.file_bytes)
+
             self.send_ack(packet.seq_num)
             return self.completed
 

@@ -8,13 +8,14 @@ from threading import Lock
 class FileTransferServer:
     """Server skeleton for receiving file transfer requests over UDP."""
 
-    def __init__(self, host="127.0.0.1", port=5005, timeout=None):
+    def __init__(self, host="127.0.0.1", port=5005, timeout=None, storage_dir="storage"):
         self.address = (host, port)
         self.transport = UdpTransport(timeout=timeout)
         self.sessions = {}
         self.executor = ThreadPoolExecutor(max_workers=10)
         self.lock = Lock()
         self.running = False
+        self.storage_dir = storage_dir
 
     def start(self):
         """Bind the server socket and prepare the receive loop."""
@@ -42,6 +43,7 @@ class FileTransferServer:
                     client_session = Session(
                         self.transport,
                         client_address,
+                        self.storage_dir,
                     )
                     self.sessions[client_address] = client_session
                     self.executor.submit(client_session.process_packets)

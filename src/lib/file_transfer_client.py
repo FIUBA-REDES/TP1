@@ -1,7 +1,6 @@
-from .protocol import handshake_start
+from .protocol import Packet, handshake_start
 from .transport import UdpTransport
-
-from .stop_and_wait import StopAndWait
+from .stop_and_wait import MAX_TRIES, StopAndWait
 
 class FileTransferClient:
     """Client skeleton for uploading and downloading files over UDP."""
@@ -11,10 +10,36 @@ class FileTransferClient:
         self.transport = UdpTransport(timeout=timeout)
         self.connected = False
 
-    def connect(self):
+    def connect(self, remote_name=None):
         """Start a transfer session with the server."""
-        self.transport.send(handshake_start(), self.server_address)
-        self.connected = True
+        payload = (
+            b""
+            if remote_name is None
+            else remote_name.encode("utf-8")
+        )
+
+        start_packet = handshake_start(payload)
+
+        for _ in range(MAX_TRIES):
+            self.transport.send(
+                start_packet,
+                self.server_address
+            )
+
+            ack_packet, address = self.transport.receive()
+
+            if (
+                ack_packet is not None
+                and address == self.server_address
+                and ack_packet.opcode == Packet.OP_ACK
+                and ack_packet.seq_num == start_packet.seq_num
+            ):
+                self.connected = True
+                return True
+
+        print("Error: no se recibió ACK del handshake.")
+        self.connected = False
+        return False
 
     def upload(self, source_path, remote_name=None, protocolo=None):
         """Upload a local file to the server."""

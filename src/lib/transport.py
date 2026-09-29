@@ -19,17 +19,13 @@ class UdpTransport:
 	def send(self, packet, address):
 		return self.socket.sendto(packet.encode(), address)
 
-
 	def try_receive(self, buffer_size=65535):
-		self.socket.settimeout(0.5)
 		try:
 			data, address = self.socket.recvfrom(buffer_size)
 			return Packet.decode(data), address
 
 		except socket.timeout:
 			return None, None
-
-
 
 	def receive(self, buffer_size=65535):
 		return self.try_receive(buffer_size)

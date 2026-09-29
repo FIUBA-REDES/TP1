@@ -53,7 +53,7 @@ La asignación combina implementación, pruebas y documentación para que cada i
   - [x] Retransmitir el paquete `FIN` si no llega su ACK.
   - [x] Enviar `OP_FIN` al terminar el archivo.
   - [x] Limitar la cantidad de retransmisiones.
-  - [ ] Cerrar correctamente los archivos con `with open(...)`.
+  - [x] Cerrar correctamente los archivos con `with open(...)`.
 - [ ] Implementar Go-Back-N.
   - [ ] Definir el tamaño de ventana.
   - [ ] Mantener los paquetes pendientes de confirmación.
@@ -69,9 +69,9 @@ La asignación combina implementación, pruebas y documentación para que cada i
 
 ## Servidor y sesiones
 
-- [ ] Guardar en disco los bytes recibidos por cada sesión.
-- [ ] Usar `remote_name` para definir el nombre del archivo remoto.
-- [ ] Agregar al servidor una opción `--storage` para elegir el directorio de almacenamiento.
+- [x] Guardar en disco los bytes recibidos por cada sesión.
+- [x] Usar `remote_name` para definir el nombre del archivo remoto.
+- [x] Agregar al servidor una opción `--storage` para elegir el directorio de almacenamiento.
 - [ ] Completar el cierre de sesión después de recibir `OP_FIN`.
 - [ ] Eliminar sesiones terminadas de `FileTransferServer.sessions`.
 - [ ] Agregar expiración o limpieza de sesiones abandonadas.
@@ -92,10 +92,10 @@ La asignación combina implementación, pruebas y documentación para que cada i
 
 ## Validación de paquetes y parámetros
 
-- [ ] Rechazar paquetes truncados.
-- [ ] Validar el tamaño mínimo del encabezado.
-- [ ] Validar `payload_len` contra el tamaño real del paquete.
-- [ ] Rechazar opcodes desconocidos.
+- [x] Rechazar paquetes truncados.
+- [x] Validar el tamaño mínimo del encabezado.
+- [x] Validar `payload_len` contra el tamaño real del paquete.
+- [x] Rechazar opcodes desconocidos.
 - [ ] Manejar mensajes `OP_ERROR`.
 - [x] Validar host obligatorio.
 - [x] Validar puertos dentro del rango permitido, normalmente `1024` a `65535`.
@@ -104,8 +104,8 @@ La asignación combina implementación, pruebas y documentación para que cada i
 - [ ] Validar que el directorio de almacenamiento exista o pueda crearse.
 - [x] Validar el protocolo seleccionado.
 - [x] Validar rutas de destino de descarga.
-- [ ] Corregir la ayuda de `argparse` sin redefinir `-h` manualmente.
-- [ ] Cerrar el cliente y el transporte al finalizar una operación.
+- [x] Corregir la ayuda de `argparse` sin redefinir `-h` manualmente.
+- [x] Cerrar el cliente y el transporte al finalizar una operación.
 
 ## Tests
 
@@ -139,12 +139,12 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 
 ## Mininet y red real
 
-- [ ] Verificar conectividad con `pingall`.
-- [ ] Ejecutar el servidor dentro de `h1`.
-- [ ] Ejecutar uno o más clientes dentro de `h2`.
+- [x] Verificar conectividad con `pingall`.
+- [x] Ejecutar el servidor dentro de `h1`.
+- [x] Ejecutar uno o más clientes dentro de `h2`.
 - [ ] Probar dos transferencias simultáneas.
-- [ ] Probar con pérdida del 10%.
-- [ ] Probar con latencia configurada.
+- [x] Probar con pérdida del 10%.
+- [x] Probar con latencia configurada.
 - [ ] Probar con RTT alto, de hasta aproximadamente 300 ms si lo exige el enunciado.
 - [ ] Medir tiempo de transferencia.
 - [ ] Medir throughput promedio.
