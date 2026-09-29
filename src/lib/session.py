@@ -56,6 +56,7 @@ class Session:
             return False
 
         if packet.opcode == Packet.OP_FIN:
+            print(f"FIN recibido: seq={packet.seq_num}")
             self.completed = not self.chunks
 
             if self.completed:
@@ -71,6 +72,7 @@ class Session:
                         file.write(self.file_bytes)
 
             self.send_ack(packet.seq_num)
+            print(f"ACK FIN enviado: seq={packet.seq_num}")
             return self.completed
 
         return False

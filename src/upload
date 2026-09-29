@@ -25,15 +25,9 @@ def main():
         if not cliente.connect(args.name):
             return
 
-        cliente.upload(
-            args.src,
-            args.name,
-            args.protocol
-        )
+        cliente.upload(args.src, args.name, args.protocol)
     finally:
         cliente.close()
-
-    cliente.upload(args.src, args.name, args.protocol)
 
 if __name__ == "__main__":
     main()
