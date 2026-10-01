@@ -20,9 +20,10 @@ def main():
         return
 
     cliente = FileTransferClient(args.host, args.port)
-    cliente.connect()
-
-    cliente.download(args.dst, args.name, args.protocol)
+    try:
+        cliente.download(args.dst, args.name, args.protocol)
+    finally:
+        cliente.close()
 
 if __name__ == "__main__":
     main()

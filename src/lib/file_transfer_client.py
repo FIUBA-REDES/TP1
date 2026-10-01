@@ -37,6 +37,15 @@ class FileTransferClient:
                 self.connected = True
                 return True
 
+            if (
+                ack_packet is not None
+                and address == self.server_address
+                and ack_packet.opcode == Packet.OP_ERROR
+            ):
+                print("Error del servidor: " + ack_packet.payload.decode("utf-8", errors="replace"))
+                self.connected = False
+                return False
+
         print("Error: no se recibió ACK del handshake.")
         self.connected = False
         return False
@@ -64,6 +73,9 @@ class FileTransferClient:
         """Download a file from the server."""
         
         if protocol == "stop-and-wait":
+            if not self.connect("DOWNLOAD:" + remote_name):
+                return
+            
             if StopAndWait.receive(self.transport, destination_path, self.server_address) == False:
                 print("Error: Failed to receive the file using Stop-and-Wait protocol.")
                 return

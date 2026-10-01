@@ -1,4 +1,3 @@
-from .transport import UdpTransport
 from .protocol import Packet
 
 MAX_TRIES = 5
@@ -63,10 +62,9 @@ class StopAndWait:
 
         return True
 
-    def receive(transport):
+    def receive(transport, destination_path, server_address):
         expected_seq = 0
         buffer = bytearray()
-        client_address = None
 
         while True:
             packet, address = transport.receive()
@@ -74,10 +72,7 @@ class StopAndWait:
             if packet is None:
                 continue
 
-            if client_address is None:
-                client_address = address
-
-            if address != client_address:
+            if address != server_address:
                 continue
 
             if packet.opcode == Packet.OP_DATA:
@@ -98,8 +93,18 @@ class StopAndWait:
                     packet_ack = Packet(Packet.OP_ACK, packet.seq_num, 0, b"")
                     transport.send(packet_ack, address)
 
-                    return bytes(buffer)
+                    with open(destination_path, "wb") as file:
+                        file.write(buffer)
+
+                    return True
 
                 elif packet.seq_num < expected_seq:
                     packet_ack = Packet(Packet.OP_ACK, packet.seq_num, 0, b"")
                     transport.send(packet_ack, address)
+
+            elif packet.opcode == Packet.OP_ERROR:
+                print(
+                    "Error del servidor: "
+                    + packet.payload.decode("utf-8", errors="replace")
+                )
+                return False

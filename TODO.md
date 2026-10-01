@@ -83,12 +83,12 @@ La asignación combina implementación, pruebas y documentación para que cada i
 
 ## Descarga
 
-- [ ] Implementar `FileTransferClient.download()`.
-- [ ] Definir el mensaje de solicitud de descarga.
-- [ ] Validar que el archivo remoto exista.
-- [ ] Enviar el archivo desde el servidor al cliente usando el protocolo elegido.
-- [ ] Reconstruir y guardar el archivo en `destination_path`.
-- [ ] Verificar la descarga comparando el archivo original y el recibido.
+- [x] Implementar `FileTransferClient.download()`.
+- [x] Definir el mensaje de solicitud de descarga.
+- [x] Validar que el archivo remoto exista.
+- [x] Enviar el archivo desde el servidor al cliente usando el protocolo elegido.
+- [x] Reconstruir y guardar el archivo en `destination_path`.
+- [x] Verificar la descarga comparando el archivo original y el recibido.
 
 ## Validación de paquetes y parámetros
 

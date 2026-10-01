@@ -1,6 +1,8 @@
-from .protocol import Packet
+import os
+from .protocol import Packet, ack
 from .session import Session
 from .transport import UdpTransport
+from .stop_and_wait import StopAndWait
 from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 
@@ -35,6 +37,33 @@ class FileTransferServer:
 
     def handle_packet(self, packet, client_address):
         """Register a new client and dispatch its packet."""
+        download_prefix = b"DOWNLOAD:"
+
+        if (
+            packet.opcode == Packet.OP_START
+            and packet.payload.startswith(download_prefix)
+        ):
+            remote_name = packet.payload[len(download_prefix):].decode("utf-8")
+            path = os.path.join(self.storage_dir, remote_name)
+
+            if not os.path.isfile(path):
+                error_packet = Packet(
+                    Packet.OP_ERROR,
+                    packet.seq_num,
+                    0,
+                    b"El archivo solicitado no existe."
+                )
+                self.transport.send(error_packet, client_address)
+                return
+
+            self.transport.send(ack(packet.seq_num), client_address)
+            self.transport.set_timeout(1.0)
+            try:
+                StopAndWait.send(self.transport, path, client_address)
+            finally:
+                self.transport.set_timeout(None)
+            return
+        
         with self.lock:
             client_session = self.sessions.get(client_address)
 
