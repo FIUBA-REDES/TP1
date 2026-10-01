@@ -3,7 +3,7 @@ import os
 LAST_WELL_KNOWN_PORT = 1023
 MAX_PORT = 65535
 COLLECTION_OF_NOT_KNOWN_USED_PORTS = (8080,)
-VALID_PROTOCOLS = ("stop-and-wait", "go-back-n", "selective-repeat")
+VALID_PROTOCOLS = ("sw", "sack")
 
 
 def verify_server_address(host, port):
@@ -81,7 +81,7 @@ def verify_client_args(args):
     if args.protocol not in VALID_PROTOCOLS:
         print(
             "Error: Invalid protocol. Please choose one of the following: "
-            "stop-and-wait, go-back-n, selective-repeat"
+            "sw, sack"
         )
         return False
 

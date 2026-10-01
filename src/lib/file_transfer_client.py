@@ -3,7 +3,6 @@ from .transport import UdpTransport
 from .stop_and_wait import MAX_TRIES, StopAndWait
 
 class FileTransferClient:
-    """Client skeleton for uploading and downloading files over UDP."""
 
     def __init__(self, server_host, server_port, timeout=1.0):
         self.server_address = (server_host, server_port)
@@ -53,26 +52,23 @@ class FileTransferClient:
     def upload(self, source_path, remote_name=None, protocolo=None):
         """Upload a local file to the server."""
         
-        if protocolo == "stop-and-wait":
+        if protocolo == "sw":
             if StopAndWait.send(self.transport, source_path, self.server_address) == False:
                 print("Error: Failed to send the file using Stop-and-Wait protocol.")
                 return
             else:
                 print(f"File '{source_path}' sent successfully using Stop-and-Wait protocol.")
             
-        elif protocolo == "go-back-n":
-            # Implement Go-Back-N protocol here
-            pass
-        elif protocolo == "selective-repeat":
-            # Implement Selective Repeat protocol here
+        elif protocolo == "sack":
+            # Implementar SACK acá.
             pass
         else:
-            raise ValueError("Invalid protocol specified. Choose 'stop-and-wait', 'go-back-n', or 'selective-repeat'.")
+            raise ValueError("Invalid protocol specified. Choose 'sw' or 'sack'.")
             
     def download(self, destination_path, remote_name=None, protocol=None):
         """Download a file from the server."""
         
-        if protocol == "stop-and-wait":
+        if protocol == "sw":
             if not self.connect("DOWNLOAD:" + remote_name):
                 return
             
@@ -81,14 +77,12 @@ class FileTransferClient:
                 return
             else:
                 print(f"File '{destination_path}' received successfully using Stop-and-Wait protocol.")
-        elif protocol == "go-back-n":
-            # Implement Go-Back-N download logic here
-            pass
+
         elif protocol == "selective-repeat":
-            # Implement Selective Repeat download logic here
+            # Implementar SACK acá.
             pass
         else:
-            raise ValueError("Invalid protocol specified. Choose 'stop-and-wait', 'go-back-n', or 'selective-repeat'.")
+            raise ValueError("Invalid protocol specified. Choose 'sw' or 'sack'.")
 
     def close(self):
         """Close the UDP transport."""
