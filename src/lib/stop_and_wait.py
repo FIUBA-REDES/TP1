@@ -8,9 +8,7 @@ class StopAndWait:
         def send_and_wait(packet):
             for _ in range(MAX_TRIES):
                 transport.send(packet, server_address)
-
                 ack_packet, address = transport.receive()
-
                 if (
                     ack_packet is not None
                     and address == server_address
@@ -19,13 +17,12 @@ class StopAndWait:
                 ):
                     print(f"ACK recibido: {ack_packet}")
                     return True
-
             return False
 
         with open(file_path, "rb") as file:
             data = file.read(1024)
             seq_num = 0
-
+            
             while data:
                 packet = Packet(
                     Packet.OP_DATA,
@@ -33,15 +30,17 @@ class StopAndWait:
                     0,
                     data
                 )
-
                 if not send_and_wait(packet):
                     print(
                         "No se recibió ACK del servidor en "
                         + str(MAX_TRIES)
                         + " intentos."
                     )
+                    # Enviar OP_ERROR antes de abortar
+                    err_pkt = Packet(Packet.OP_ERROR, packet.seq_num, 0, b"Transferencia abortada por reintentos de datos.")
+                    transport.send(err_pkt, server_address)
                     return False
-
+                
                 data = file.read(1024)
                 seq_num += 1
 
@@ -51,17 +50,20 @@ class StopAndWait:
                 0,
                 b""
             )
-
             if not send_and_wait(fin_packet):
                 print(
                     "No se recibió ACK del FIN en "
                     + str(MAX_TRIES)
                     + " intentos."
                 )
+                # NUEVO: Enviar OP_ERROR antes de abortar
+                err_pkt = Packet(Packet.OP_ERROR, seq_num, 0, b"Transferencia abortada por reintentos de FIN.")
+                transport.send(err_pkt, server_address)
                 return False
 
         return True
 
+    
     def receive(transport, destination_path, server_address):
         expected_seq = 0
         buffer = bytearray()

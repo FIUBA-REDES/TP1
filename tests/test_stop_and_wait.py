@@ -325,7 +325,8 @@ def test_send_stops_after_max_retries(tmp_path):
     )
 
     assert result is False
-    assert transport.send_count == MAX_TRIES
+    # Se esperan MAX_TRIES intentos de datos + 1 envío final del OP_ERROR
+    assert transport.send_count == MAX_TRIES + 1
 
 
 
@@ -366,3 +367,33 @@ def test_receive_aborts_on_timeout_limit(tmp_path):
     finally:
         client.close()
         server.close()
+
+
+class RecordingNoAckTransport:
+    def __init__(self):
+        self.sent_packets = []
+
+    def send(self, packet, address):
+        self.sent_packets.append(packet)
+        return len(packet.encode())
+
+    def receive(self, buffer_size=65535):
+        return None, None
+
+# Este test fuerza al emisor a agotar sus MAX_TRIES simulando una red que no responde.
+# Verifica que, antes de abortar silenciosamente, el emisor construya y envíe 
+# un paquete de tipo OP_ERROR para avisarle al receptor que se canceló la transferencia.
+def test_send_notifies_op_error_on_max_retries(tmp_path):
+    transport = RecordingNoAckTransport()
+    file_path = tmp_path / "abort_test.bin"
+    file_path.write_bytes(b"Datos no confirmados")
+
+    # Ejecutamos el envío, que fallará tras 5 intentos
+    result = StopAndWait.send(transport, file_path, ("127.0.0.1", 7800))
+
+    assert result is False
+    # Filtramos los paquetes enviados buscando el OP_ERROR
+    error_packets = [
+        p for p in transport.sent_packets if p.opcode == Packet.OP_ERROR
+    ]
+    assert len(error_packets) > 0, "No se envió paquete OP_ERROR al agotar reintentos"
