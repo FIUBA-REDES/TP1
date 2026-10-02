@@ -397,3 +397,51 @@ def test_send_notifies_op_error_on_max_retries(tmp_path):
         p for p in transport.sent_packets if p.opcode == Packet.OP_ERROR
     ]
     assert len(error_packets) > 0, "No se envió paquete OP_ERROR al agotar reintentos"
+
+
+class DropFinAckTransport(UdpTransport):
+    def __init__(self, host, port, timeout=0.2):
+        super().__init__(host, port, timeout=timeout)
+        self.drop_fin_ack = True
+
+    def send(self, packet, address):
+        # Descartamos únicamente el primer ACK que confirma el FIN
+        if packet.opcode == Packet.OP_ACK and self.drop_fin_ack:
+            # Si el seq_num es 1 (el seq del FIN tras 1 paquete de datos)
+            if packet.seq_num == 1:
+                self.drop_fin_ack = False
+                return len(packet.encode())
+        return super().send(packet, address)
+
+
+# Este test verifica que si el último ACK (que confirma el OP_FIN) se pierde en la red,
+# el receptor no cierre su socket inmediatamente. Debe quedarse en un estado TIME_WAIT
+# para escuchar la retransmisión del OP_FIN por parte del emisor y reenviar el ACK.
+def test_fin_retransmission_handled_by_receiver(tmp_path):
+    server = DropFinAckTransport("127.0.0.1", 7900, timeout=0.2)
+    client = UdpTransport("127.0.0.1", 7901, timeout=0.2)
+    file_path = tmp_path / "fin_test.txt"
+    destination = tmp_path / "fin_received.txt"
+    file_path.write_bytes(b"Contenido de prueba FIN")
+
+    result = {}
+
+    def server_receive():
+        result["data"] = StopAndWait.receive(
+            server, destination, ("127.0.0.1", 7901)
+        )
+
+    thread = threading.Thread(target=server_receive)
+    thread.start()
+
+    server_address = ("127.0.0.1", 7900)
+    try:
+        send_result = StopAndWait.send(client, file_path, server_address)
+        thread.join(timeout=3.0)
+
+        assert send_result is True, "El emisor falló porque no recibió el ACK retransmitido"
+        assert result["data"] is True
+        assert destination.read_bytes() == file_path.read_bytes()
+    finally:
+        client.close()
+        server.close()

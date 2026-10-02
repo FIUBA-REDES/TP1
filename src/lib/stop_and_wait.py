@@ -72,6 +72,7 @@ class StopAndWait:
         while True:
             packet, address = transport.receive()
 
+            # Si hay timeout, sumamos al contador.
             if packet is None:
                 consecutive_timeouts += 1
                 if consecutive_timeouts >= MAX_TRIES:
@@ -79,7 +80,8 @@ class StopAndWait:
                     return False
                 continue
 
-            consecutive_timeouts = 0  # Se reinicia al recibir cualquier paquete válido
+            # Reiniciamos el contador porque llegó un paquete válido
+            consecutive_timeouts = 0
 
             if address != server_address:
                 continue
@@ -96,11 +98,27 @@ class StopAndWait:
 
             elif packet.opcode == Packet.OP_FIN:
                 if packet.seq_num == expected_seq:
-                    packet_ack = Packet(Packet.OP_ACK, packet.seq_num, 0, b"")
-                    transport.send(packet_ack, address)
+                    # Escribimos el archivo final en disco
                     with open(destination_path, "wb") as file:
                         file.write(buffer)
+
+                    # Mandamos el primer ACK confirmando el FIN
+                    packet_ack = Packet(Packet.OP_ACK, packet.seq_num, 0, b"")
+                    transport.send(packet_ack, address)
+
+                    # Esperamos brevemente por si el ACK se perdió
+                    transport.set_timeout(0.5)
+                    for _ in range(MAX_TRIES):
+                        extra_pkt, extra_addr = transport.receive()
+                        if extra_pkt is None:
+                            # Si el timeout expira sin recibir nada, el emisor cerró con éxito.
+                            break
+                        if extra_addr == server_address and extra_pkt.opcode == Packet.OP_FIN:
+                            # Si vuelve a llegar el FIN, reenviamos el ACK.
+                            transport.send(packet_ack, address)
+
                     return True
+
                 elif packet.seq_num < expected_seq:
                     packet_ack = Packet(Packet.OP_ACK, packet.seq_num, 0, b"")
                     transport.send(packet_ack, address)
