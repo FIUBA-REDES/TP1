@@ -22,12 +22,15 @@ class StopAndWait:
         with open(file_path, "rb") as file:
             data = file.read(1024)
             seq_num = 0
+            ack_num = 0
             
             while data:
+                if seq_num != 0:
+                    ack_num = seq_num - 1
                 packet = Packet(
                     Packet.OP_DATA,
                     seq_num,
-                    0,
+                    ack_num,
                     data
                 )
                 if not send_and_wait(packet):
@@ -47,7 +50,7 @@ class StopAndWait:
             fin_packet = Packet(
                 Packet.OP_FIN,
                 seq_num,
-                0,
+                ack_num + 1,
                 b""
             )
             if not send_and_wait(fin_packet):

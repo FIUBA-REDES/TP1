@@ -60,12 +60,7 @@ def handshake_start(payload=b"") -> Packet:
     return Packet(opcode=Packet.OP_START, seq_num=0, ack_num=0, payload=payload)
 
 def ack(seq_num: int) -> Packet:
-    return Packet(opcode=Packet.OP_ACK, seq_num=seq_num, ack_num=0, payload=b'')
+    return Packet(opcode=Packet.OP_ACK, seq_num=seq_num, ack_num=seq_num, payload=b'')
 
 def session_end(seq_num: int) -> Packet:
-    return Packet(opcode=Packet.OP_FIN, seq_num=seq_num, ack_num=0, payload=b'')
-
-
-
-
-
+    return Packet(opcode=Packet.OP_FIN, seq_num=seq_num, ack_num=seq_num, payload=b'')
