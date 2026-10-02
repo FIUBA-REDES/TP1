@@ -326,3 +326,43 @@ def test_send_stops_after_max_retries(tmp_path):
 
     assert result is False
     assert transport.send_count == MAX_TRIES
+
+
+
+
+
+
+
+
+# Este test simula un emisor que envía un solo bloque de datos y luego se desconecta
+# abruptamente sin enviar el OP_FIN. Si el test falla, StopAndWait.receive() entra
+# en un bucle while True eterno con continue.
+def test_receive_aborts_on_timeout_limit(tmp_path):
+    server = UdpTransport("127.0.0.1", 7700, timeout=0.1)
+    client = UdpTransport("127.0.0.1", 7701, timeout=0.1)
+    destination = tmp_path / "abandoned.txt"
+    result = {}
+
+    def server_receive():
+        result["data"] = StopAndWait.receive(
+            server, destination, ("127.0.0.1", 7701)
+        )
+
+    thread = threading.Thread(target=server_receive)
+    thread.start()
+
+    server_address = ("127.0.0.1", 7700)
+    try:
+        # El cliente manda 1 bloque y luego abandona la comunicación
+        packet = Packet(Packet.OP_DATA, 0, 0, b"Bloque inicial")
+        client.send(packet, server_address)
+        ack, _ = client.receive()
+        assert ack is not None and ack.opcode == Packet.OP_ACK
+
+        # Esperamos que el receptor agote los MAX_TRIES (5 * 0.1s = ~0.5s) y salga
+        thread.join(timeout=2.0)
+        assert not thread.is_alive(), "El receptor se quedó en bucle infinito"
+        assert result["data"] is False
+    finally:
+        client.close()
+        server.close()

@@ -65,12 +65,19 @@ class StopAndWait:
     def receive(transport, destination_path, server_address):
         expected_seq = 0
         buffer = bytearray()
+        consecutive_timeouts = 0
 
         while True:
             packet, address = transport.receive()
 
             if packet is None:
+                consecutive_timeouts += 1
+                if consecutive_timeouts >= MAX_TRIES:
+                    print("Error: Conexión interrumpida, se superó el límite de timeouts.")
+                    return False
                 continue
+
+            consecutive_timeouts = 0  # Se reinicia al recibir cualquier paquete válido
 
             if address != server_address:
                 continue
@@ -78,12 +85,9 @@ class StopAndWait:
             if packet.opcode == Packet.OP_DATA:
                 if packet.seq_num == expected_seq:
                     buffer.extend(packet.payload)
-
                     packet_ack = Packet(Packet.OP_ACK, packet.seq_num, 0, b"")
                     transport.send(packet_ack, address)
-
                     expected_seq += 1
-
                 elif packet.seq_num < expected_seq:
                     packet_ack = Packet(Packet.OP_ACK, packet.seq_num, 0, b"")
                     transport.send(packet_ack, address)
@@ -92,12 +96,9 @@ class StopAndWait:
                 if packet.seq_num == expected_seq:
                     packet_ack = Packet(Packet.OP_ACK, packet.seq_num, 0, b"")
                     transport.send(packet_ack, address)
-
                     with open(destination_path, "wb") as file:
                         file.write(buffer)
-
                     return True
-
                 elif packet.seq_num < expected_seq:
                     packet_ack = Packet(Packet.OP_ACK, packet.seq_num, 0, b"")
                     transport.send(packet_ack, address)
