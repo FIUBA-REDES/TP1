@@ -46,7 +46,7 @@
 
 ## 4. Pruebas y Mininet
 - [x] Suite de tests unitarios/integración en `tests/` para Stop & Wait y concurrencia.
-- [ ] Configuración del script/entorno de topología en Mininet.
+- [X] Configuración del script/entorno de topología en Mininet.
 - [ ] Pruebas con enlace al 10% de pérdida en ambos sentidos.
 - [ ] Pruebas con RTT de 40 ms y hasta 300 ms.
 - [ ] Captura de tráfico con Wireshark (`.pcap`) para verificar que SACK no retransmita datos redundantes.

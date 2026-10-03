@@ -51,6 +51,24 @@ make all
 
 `all` es equivalente a `setup`.
 
+
+## Configurar plugin de Wireshark
+
+Mover el archivo `mi_plugin.lua` dentro de la carpeta personal 
+`/home/MI_CUENTA/.local/lib/wireshark/plugins/`
+
+
+En una terminal ejecutar el comando 
+```
+sudo mn --custom src/lib/topologia.py --topo mytopo --mac
+```
+
+Abrir otra terminal y ejecutar el comando `wireshark` y seleccionar
+y debería verse por pantalla `Plugin cargado correctamente`
+
+Elegir la opción de s3-eth5 para capturar los paquetes que se envían al 
+servidor a través del puerto default 5005.
+
 ## Comandos disponibles
 
 ### Verificar el estilo
@@ -81,6 +99,15 @@ Levanta una topología `single,2` con dos hosts y enlaces configurados con
 ```text
 single,2 --link tc,loss=10,delay=20ms
 ```
+### Ejecutar la topología custom
+
+```
+sudo mn --custom src/lib/topologia.py --topo mytopo --mac
+```
+
+Levanta una topología con 5 hosts, 4 que funcionan como clientes (del
+10.0.0.1 al 10.0.0.4) y 1 que funciona como servidor (10.0.0.5) y enlaces 
+configurados con 20 ms de demora y 10% de pérdida de paquetes.
 
 ### Limpiar el entorno
 
