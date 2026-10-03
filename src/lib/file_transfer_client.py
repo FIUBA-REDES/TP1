@@ -1,6 +1,7 @@
 from .protocol import Packet, handshake_start
 from .transport import UdpTransport
 from .stop_and_wait import MAX_TRIES, StopAndWait
+from .sack import SelectiveRepeat
 
 class FileTransferClient:
 
@@ -60,8 +61,11 @@ class FileTransferClient:
                 print(f"File '{source_path}' sent successfully using Stop-and-Wait protocol.")
             
         elif protocolo == "sack":
-            # Implementar SACK acá.
-            pass
+            if not SelectiveRepeat.send(self.transport,source_path,self.server_address):
+                print("Error: Failed to send the file using Selective Repeat protocol.")
+                return
+            else:
+                print(f"File '{source_path}' sent successfully using Selective Repeat protocol.")
         else:
             raise ValueError("Invalid protocol specified. Choose 'sw' or 'sack'.")
             
@@ -78,9 +82,15 @@ class FileTransferClient:
             else:
                 print(f"File '{destination_path}' received successfully using Stop-and-Wait protocol.")
 
-        elif protocol == "selective-repeat":
-            # Implementar SACK acá.
-            pass
+        elif protocol == "sack":
+            if not self.connect("DOWNLOAD:" + remote_name):
+                return
+
+            if not SelectiveRepeat.receive(self.transport,destination_path,self.server_address):
+                print("Error: Failed to receive the file using Selective Repeat protocol.")
+                return
+            else:
+                print(f"File '{destination_path}' received successfully using Selective Repeat protocol.")
         else:
             raise ValueError("Invalid protocol specified. Choose 'sw' or 'sack'.")
 

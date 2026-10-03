@@ -3,6 +3,7 @@ from .protocol import Packet, ack
 from .session import Session
 from .transport import UdpTransport
 from .stop_and_wait import StopAndWait
+from .sack import SelectiveRepeat
 from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 
@@ -39,49 +40,38 @@ class FileTransferServer:
         """Register a new client and dispatch its packet."""
         download_prefix = b"DOWNLOAD:"
 
-        if (
-            packet.opcode == Packet.OP_START
-            and packet.payload.startswith(download_prefix)
-        ):
-            remote_name = packet.payload[len(download_prefix):].decode("utf-8")
+        if packet.opcode == Packet.OP_START and packet.payload.startswith(download_prefix):
+            request = packet.payload[len(download_prefix):].decode("utf-8")
+            protocol, remote_name = request.split(":", 1)
             path = os.path.join(self.storage_dir, remote_name)
 
-            if not os.path.isfile(path):
-                error_packet = Packet(
-                    Packet.OP_ERROR,
-                    packet.seq_num,
-                    0,
-                    b"El archivo solicitado no existe."
-                )
-                self.transport.send(error_packet, client_address)
-                return
+        if not os.path.isfile(path):
+            error_packet = Packet(
+                Packet.OP_ERROR,
+                packet.seq_num,
+                0,
+                b"El archivo solicitado no existe."
+            )
+            self.transport.send(error_packet, client_address)
+            return
 
-            self.transport.send(ack(packet.seq_num), client_address)
+        self.transport.send(ack(packet.seq_num), client_address)
+
+        if protocol == "sw":
             self.transport.set_timeout(1.0)
             try:
                 StopAndWait.send(self.transport, path, client_address)
             finally:
                 self.transport.set_timeout(None)
-            return
-        
-        with self.lock:
-            client_session = self.sessions.get(client_address)
 
-            if packet.opcode == Packet.OP_START:
-                if client_session is None:
-                    client_session = Session(
-                        self.transport,
-                        client_address,
-                        self.storage_dir,
-                    )
-                    self.sessions[client_address] = client_session
-                    self.executor.submit(client_session.process_packets)
+        elif protocol == "sack":
+            self.transport.set_timeout(1.0)
+            try:
+                SelectiveRepeat.send(self.transport, path, client_address)
+            finally:
+                self.transport.set_timeout(None)
 
-                client_session.start_session(packet)
-                return
-
-            if client_session is not None:
-                client_session.enqueue(packet)
+        return
 
     def stop(self):
         """Stop receiving packets and close the UDP transport."""
