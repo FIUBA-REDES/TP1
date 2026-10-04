@@ -21,11 +21,11 @@ class MyTopo( Topo ):
         Switch = self.addSwitch('s3')
 
         # Add links
-        self.addLink(Cliente_1, Switch, cls=TCLink,loss=10, delay='20ms')
-        self.addLink(Cliente_2, Switch, cls=TCLink,loss=10, delay='20ms')
-        self.addLink(Cliente_3, Switch, cls=TCLink,loss=10, delay='20ms')
-        self.addLink(Cliente_4, Switch, cls=TCLink,loss=10, delay='20ms')
-        self.addLink(Servidor, Switch, cls=TCLink,loss=10, delay='20ms')
+        self.addLink(Cliente_1, Switch, cls=TCLink, loss=5, delay='10ms')
+        self.addLink(Cliente_2, Switch, cls=TCLink, loss=5, delay='10ms')
+        self.addLink(Cliente_3, Switch, cls=TCLink, loss=5, delay='10ms')
+        self.addLink(Cliente_4, Switch, cls=TCLink, loss=5, delay='10ms')
+        self.addLink(Servidor, Switch, cls=TCLink, loss=5, delay='10ms')
 
 
 topos = { 'mytopo': ( lambda: MyTopo() ) }

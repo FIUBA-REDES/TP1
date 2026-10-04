@@ -63,8 +63,8 @@ En una terminal ejecutar el comando
 sudo mn --custom src/lib/topologia.py --topo mytopo --mac
 ```
 
-Abrir otra terminal y ejecutar el comando `wireshark` y seleccionar
-y debería verse por pantalla `Plugin cargado correctamente`
+Abrir otra terminal y ejecutar el comando `wireshark` y debería verse por 
+pantalla `Plugin cargado correctamente`
 
 Elegir la opción de s3-eth5 para capturar los paquetes que se envían al 
 servidor a través del puerto default 5005.

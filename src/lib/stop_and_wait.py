@@ -15,7 +15,6 @@ class StopAndWait:
                     and ack_packet.opcode == Packet.OP_ACK
                     and ack_packet.seq_num == packet.seq_num
                 ):
-                    print(f"ACK recibido: {ack_packet}")
                     return True
             return False
 
@@ -90,13 +89,14 @@ class StopAndWait:
                 continue
 
             if packet.opcode == Packet.OP_DATA:
+                ack_num = packet.seq_num
                 if packet.seq_num == expected_seq:
                     buffer.extend(packet.payload)
-                    packet_ack = Packet(Packet.OP_ACK, packet.seq_num, 0, b"")
+                    packet_ack = Packet(Packet.OP_ACK, packet.seq_num, ack_num, b"")
                     transport.send(packet_ack, address)
                     expected_seq += 1
                 elif packet.seq_num < expected_seq:
-                    packet_ack = Packet(Packet.OP_ACK, packet.seq_num, 0, b"")
+                    packet_ack = Packet(Packet.OP_ACK, packet.seq_num, ack_num, b"")
                     transport.send(packet_ack, address)
 
             elif packet.opcode == Packet.OP_FIN:
