@@ -57,7 +57,7 @@ class FileTransferServer:
                 return
 
             self.transport.send(ack(packet.seq_num), client_address)
-            self.transport.set_timeout(0.1)
+            self.transport.set_timeout(1.0)
             try:
                 StopAndWait.send(self.transport, path, client_address)
             finally:

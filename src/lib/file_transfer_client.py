@@ -4,7 +4,7 @@ from .stop_and_wait import MAX_TRIES, StopAndWait
 
 class FileTransferClient:
 
-    def __init__(self, server_host, server_port, timeout=0.1):
+    def __init__(self, server_host, server_port, timeout=1.0):
         self.server_address = (server_host, server_port)
         self.transport = UdpTransport(timeout=timeout)
         self.connected = False

@@ -20,7 +20,7 @@
 - [ ] Implementar la ventana deslizante (sliding window) en el emisor.
 - [ ] Implementar en el receptor el seguimiento de paquetes fuera de orden y generación de bloques SACK.
 - [ ] Retransmisión selectiva de paquetes perdidos (evitando retransmitir datos ya confirmados).
-- [ ] Soportar RTTs de hasta 300 ms.
+- [x] Soportar RTTs de hasta 300 ms.
 - [ ] Cumplir requisito crítico: transferir 5 MB en < 2 minutos con 10% de pérdida y 40 ms de RTT.
 
 ## 3. Clientes y Servidor Concurrente
@@ -48,7 +48,7 @@
 - [x] Suite de tests unitarios/integración en `tests/` para Stop & Wait y concurrencia.
 - [X] Configuración del script/entorno de topología en Mininet.
 - [X] Pruebas con enlace al 10% de pérdida en ambos sentidos.
-- [X] Pruebas con RTT de 40 ms
+- [ ] Pruebas con RTT de 40 ms
 - [ ] Captura de tráfico con Wireshark (`.pcap`) para verificar que SACK no retransmita datos redundantes.
 
 ## 5. Mediciones y Análisis (Sección 4 del enunciado)
