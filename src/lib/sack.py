@@ -30,11 +30,6 @@ class SelectiveRepeat:
 
     @staticmethod
     def receive_with_timeout(transport, expected_address, timeout=0.02):
-        """
-        Retorna (packet, address) o (None, None) tras expirar el timeout.
-        NOTA: Para evitar bloqueos, transport.receive() idealmente debería 
-        usar internamente un socket.settimeout() o select.
-        """
         start_time = time.time()
         while True:
             packet, address = transport.receive()
@@ -47,26 +42,22 @@ class SelectiveRepeat:
     @staticmethod
     def receive_acks(transport, server_address, packets, base_seq):
         while True:
-            # Consumimos todos los ACKs acumulados en el socket (con un timeout muy corto)
-            ack_packet, _ = SelectiveRepeat.receive_with_timeout(transport, server_address, 0.02)
+            ack_packet, _ = SelectiveRepeat.receive_with_timeout(transport, server_address, 0.0)
             
             if ack_packet is None:
-                break  # Se vació el buffer de recepción por ahora
+                break
             if ack_packet.opcode != Packet.OP_ACK:
                 continue
 
             cumulative_ack = ack_packet.ack_num
             sack_sequences = SelectiveRepeat._decode_sack(ack_packet.payload)
 
-            # Confirmación acumulativa: eliminar paquetes anteriores al ACK
             for seq_num in list(packets.keys()):
                 if seq_num < cumulative_ack:
                     del packets[seq_num]
             
-            # Aseguramos que la base de la ventana avance y no retroceda (por ACKs viejos desordenados)
             base_seq = max(base_seq, cumulative_ack)
 
-            # Confirmación selectiva: marcar los paquetes que el receptor ya tiene cacheados
             for seq_num in sack_sequences:
                 if seq_num in packets:
                     packets[seq_num]['sacked'] = True
@@ -78,7 +69,6 @@ class SelectiveRepeat:
         current_time = time.time()
 
         for seq_num, packet_info in packets.items():
-            # Solo retransmitir si NO está confirmado selectivamente
             if not packet_info['sacked']:
                 time_since_sent = current_time - packet_info['time_sent']
 
@@ -100,10 +90,9 @@ class SelectiveRepeat:
         for _ in range(MAX_TRIES):
             transport.send(fin_pkt, server_address)
             
-            # Esperamos el ACK del FIN
             start_time = time.time()
             while time.time() - start_time < RTO:
-                ack_packet, _ = SelectiveRepeat.receive_with_timeout(transport, server_address, 0.02)
+                ack_packet, _ = SelectiveRepeat.receive_with_timeout(transport, server_address, 0.05)
                 
                 if ack_packet is not None:
                     if ack_packet.opcode == Packet.OP_ACK and ack_packet.ack_num == next_seq:
@@ -114,21 +103,17 @@ class SelectiveRepeat:
         transport.send(error_packet, server_address)
         return False
 
-
-
     @staticmethod
     def send(transport, file_path, server_address):
         packets = {}
         next_seq = 0
         base_seq = 0
         eof = False
-        RTO = 0.5  # Apropiado para RTTs altos, ej: 300 ms. NUNCA 0.02s para RTO.
+        RTO = 0.5  
 
         with open(file_path, "rb") as file:
-            # El bucle principal se ejecuta hasta vaciar el archivo Y la ventana
             while not eof or packets:
                 
-                # 1. Inyectar nuevos paquetes mientras haya espacio en la ventana
                 while not eof and next_seq < base_seq + WINDOW_SIZE:
                     data = file.read(CHUNK_SIZE)
                     if not data:
@@ -146,33 +131,21 @@ class SelectiveRepeat:
                     }
                     next_seq += 1
 
-                # 2. Drenar ACKs y actualizar la ventana
                 base_seq = SelectiveRepeat.receive_acks(transport, server_address, packets, base_seq)
                 
-                # 3. Revisar temporizadores individuales y reenviar pérdidas detectadas
                 if not SelectiveRepeat.check_timeouts_and_retransmit(transport, server_address, packets, RTO):
-                    return False  # Abortar si excedemos reintentos de un paquete de datos
+                    return False  
 
-        # 4. Iniciar Handshake de Finalización una vez vaciada toda la ventana
         return SelectiveRepeat.handshake_and_fin(transport, server_address, next_seq)
 
-
-
-
-
-
-
-
     @staticmethod
-    def retry_reply_fin_ack (transport, server_address, expected_seq):
+    def retry_reply_fin_ack(transport, server_address, expected_seq):
         end_time = time.time() + 1.5
         while time.time() < end_time:
-            pkt, addr = SelectiveRepeat.receive_with_timeout(transport, server_address, RTO)
+            pkt, addr = SelectiveRepeat.receive_with_timeout(transport, server_address, 0.2)
             if pkt is not None and pkt.opcode == Packet.OP_FIN:
                 ack_packet = Packet(Packet.OP_ACK, pkt.seq_num, expected_seq, b"")
                 transport.send(ack_packet, addr)
-
-
 
     @staticmethod
     def receive(transport, destination_path, server_address):
@@ -183,10 +156,8 @@ class SelectiveRepeat:
         consecutive_timeouts = 0
         RTO = 1.0
 
-   
         with open(destination_path, "wb") as file:
             while True:
-              
                 packet, address = SelectiveRepeat.receive_with_timeout(transport, server_address, RTO)
 
                 if packet is None:
@@ -199,30 +170,25 @@ class SelectiveRepeat:
                 consecutive_timeouts = 0
 
                 if packet.opcode == Packet.OP_DATA:
-                    # Paquete viejo duplicado, destrabar al emisor.
                     if packet.seq_num < expected_seq:
                         sack_payload = SelectiveRepeat._encode_sack(chunks.keys())
                         ack_packet = Packet(Packet.OP_ACK, packet.seq_num, expected_seq, sack_payload)
                         transport.send(ack_packet, address)
                         continue
 
-                    # Paquete esperado en orden
                     if packet.seq_num == expected_seq:
                         file.write(packet.payload)
                         expected_seq += 1
 
-                        # Drenar los paquetes contiguos que esperaban en la memoria
                         while expected_seq in chunks:
                             data = chunks.pop(expected_seq)
                             file.write(data)
                             expected_seq += 1
 
-                    # Paquete futuro (fuera de orden)
                     elif packet.seq_num > expected_seq:
                         if packet.seq_num not in chunks:
                             chunks[packet.seq_num] = packet.payload
 
-                    # Responder siempre con el ACK acumulativo + bloque SACK
                     sack_payload = SelectiveRepeat._encode_sack(chunks.keys())
                     ack_packet = Packet(Packet.OP_ACK, packet.seq_num, expected_seq, sack_payload)
                     transport.send(ack_packet, address)
@@ -246,6 +212,5 @@ class SelectiveRepeat:
                     return False
 
         SelectiveRepeat.retry_reply_fin_ack(transport, server_address, expected_seq)
-
 
         return True
