@@ -54,7 +54,40 @@ class Packet:
 
         return cls(opcode=opcode, seq_num=seq_num, ack_num=ack_num, payload=payload)
    
-        
+#Maneja el ack de selective acknowledgment (SACK). Crea un paquete de ACK con el número de secuencia más alto recibido y una lista de los números de secuencia recibidos fuera de orden.
+    @staticmethod
+    def sack_ack(next_seq, received):
+        payload = b"".join(
+            seq.to_bytes(Packet.SEQ_SIZE, byteorder="big")
+            for seq in sorted(received)
+        )
+
+        return Packet(
+            opcode=Packet.OP_ACK,
+            seq_num=0,
+            ack_num=next_seq,
+            payload=payload
+        )
+
+#Decodifica un paquete de ACK con SACK. Devuelve el número de secuencia más alto recibido y una lista de los números de secuencia recibidos fuera de orden.
+    def decode_sack(packet):
+        if packet.opcode != Packet.OP_ACK:
+            raise ValueError("El paquete no es un ACK.")
+
+        if len(packet.payload) % Packet.SEQ_SIZE != 0:
+            raise ValueError("Payload SACK inválido.")
+
+        received = []
+
+        for i in range(0, len(packet.payload), Packet.SEQ_SIZE):
+            seq_num = int.from_bytes(
+                packet.payload[i:i + Packet.SEQ_SIZE],
+                byteorder="big"
+            )
+            received.append(seq_num)
+
+        return packet.ack_num, received        
+
 
 def handshake_start(payload=b"") -> Packet:
     return Packet(opcode=Packet.OP_START, seq_num=0, ack_num=0, payload=payload)
