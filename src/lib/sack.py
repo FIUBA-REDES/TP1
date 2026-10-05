@@ -2,7 +2,7 @@ import time
 import select
 from .protocol import Packet
 
-MAX_TRIES = 5
+MAX_TRIES = 12
 WINDOW_SIZE = 32
 CHUNK_SIZE = 1024
 SACK_SIZE = 4
@@ -62,7 +62,7 @@ class SelectiveRepeat:
     @staticmethod
     def receive_acks(transport, server_address, packets, base_seq, next_seq):
         while True:
-            ack_packet, _ = SelectiveRepeat.receive_with_timeout(transport, server_address, 0.0)
+            ack_packet, _ = SelectiveRepeat.receive_with_timeout(transport, server_address, 0.02)
             
             if ack_packet is None:
                 break  
