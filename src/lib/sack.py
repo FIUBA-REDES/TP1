@@ -1,4 +1,5 @@
 import time
+import select
 from .protocol import Packet
 
 MAX_TRIES = 5
@@ -29,27 +30,49 @@ class SelectiveRepeat:
         return sequences
 
     @staticmethod
-    def receive_with_timeout(transport, expected_address, timeout=0.02):
+    def receive_with_timeout(transport, expected_address, timeout=None):
         start_time = time.time()
+        has_sock = hasattr(transport, 'socket')
+        
         while True:
+            if timeout is not None:
+                remaining = timeout - (time.time() - start_time)
+                if remaining <= 0:
+                    remaining = 0
+                
+                if has_sock:
+                    ready, _, _ = select.select([transport.socket], [], [], remaining)
+                    if not ready:
+                        return None, None
+                else:
+                    if remaining == 0:
+                        return None, None
+                    time.sleep(min(0.01, remaining))
+            
             packet, address = transport.receive()
-            if packet is not None and address == expected_address:
+            if packet is None:
+                if timeout is None:
+                    return None, None
+            elif address == expected_address:
                 return packet, address
-
-            if time.time() - start_time >= timeout:
+            
+            if timeout is not None and time.time() - start_time >= timeout:
                 return None, None
 
     @staticmethod
-    def receive_acks(transport, server_address, packets, base_seq):
+    def receive_acks(transport, server_address, packets, base_seq, next_seq):
         while True:
             ack_packet, _ = SelectiveRepeat.receive_with_timeout(transport, server_address, 0.0)
             
             if ack_packet is None:
-                break
+                break  
             if ack_packet.opcode != Packet.OP_ACK:
                 continue
 
             cumulative_ack = ack_packet.ack_num
+            if cumulative_ack > next_seq:
+                continue
+
             sack_sequences = SelectiveRepeat._decode_sack(ack_packet.payload)
 
             for seq_num in list(packets.keys()):
@@ -78,7 +101,8 @@ class SelectiveRepeat:
                         packet_info['time_sent'] = current_time
                         packet_info['tries'] += 1
                     else:
-                        print(f"Error: Se superó el límite de reintentos para paquete {seq_num}.")
+                        err_pkt = Packet(Packet.OP_ERROR, seq_num, 0, b"Max retries reached")
+                        transport.send(err_pkt, server_address)
                         return False
         return True
 
@@ -98,7 +122,6 @@ class SelectiveRepeat:
                     if ack_packet.opcode == Packet.OP_ACK and ack_packet.ack_num == next_seq:
                         return True
 
-        print("Error: No se recibió ACK del FIN en los intentos permitidos.")
         error_packet = Packet(Packet.OP_ERROR, next_seq, 0, b"Transferencia abortada por reintentos de FIN.")
         transport.send(error_packet, server_address)
         return False
@@ -109,7 +132,7 @@ class SelectiveRepeat:
         next_seq = 0
         base_seq = 0
         eof = False
-        RTO = 0.5  
+        RTO = 0.5
 
         with open(file_path, "rb") as file:
             while not eof or packets:
@@ -131,7 +154,7 @@ class SelectiveRepeat:
                     }
                     next_seq += 1
 
-                base_seq = SelectiveRepeat.receive_acks(transport, server_address, packets, base_seq)
+                base_seq = SelectiveRepeat.receive_acks(transport, server_address, packets, base_seq, next_seq)
                 
                 if not SelectiveRepeat.check_timeouts_and_retransmit(transport, server_address, packets, RTO):
                     return False  
@@ -140,7 +163,7 @@ class SelectiveRepeat:
 
     @staticmethod
     def retry_reply_fin_ack(transport, server_address, expected_seq):
-        end_time = time.time() + 1.5
+        end_time = time.time() + 1.0
         while time.time() < end_time:
             pkt, addr = SelectiveRepeat.receive_with_timeout(transport, server_address, 0.2)
             if pkt is not None and pkt.opcode == Packet.OP_FIN:
@@ -154,16 +177,14 @@ class SelectiveRepeat:
         fin_received = False
         fin_seq = None
         consecutive_timeouts = 0
-        RTO = 1.0
 
         with open(destination_path, "wb") as file:
             while True:
-                packet, address = SelectiveRepeat.receive_with_timeout(transport, server_address, RTO)
+                packet, address = SelectiveRepeat.receive_with_timeout(transport, server_address, None)
 
                 if packet is None:
                     consecutive_timeouts += 1
                     if consecutive_timeouts >= MAX_TRIES:
-                        print("Error: Conexión interrumpida, se superó el límite de timeouts.")
                         return False
                     continue
 
@@ -208,9 +229,7 @@ class SelectiveRepeat:
                         break
 
                 elif packet.opcode == Packet.OP_ERROR:
-                    print("Error del servidor:", packet.payload.decode("utf-8", errors="replace"))
                     return False
 
         SelectiveRepeat.retry_reply_fin_ack(transport, server_address, expected_seq)
-
         return True
