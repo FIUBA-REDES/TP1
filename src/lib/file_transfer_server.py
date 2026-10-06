@@ -111,7 +111,7 @@ class FileTransferServer:
             # Ejecutar el envío hacia el cliente en el pool de threads
             self.executor.submit(
                 self._worker_task,
-                client_session,
+                self.transport,
                 "DOWNLOAD",
                 req_protocol,
                 file_path,
@@ -144,13 +144,17 @@ class FileTransferServer:
                 return
             
 
-    def _worker_task(self, client_session, action,
+    def _worker_task(self, transport, action,
                      protocol, path, client_address):
-        """Ejecuta el protocolo de DOWNLOAD en un hilo separado."""
-        if protocol == "sw":
-            StopAndWait.send(client_session, path, client_address)
-        elif protocol == "sack":
-            SelectiveRepeat.send(client_session, path, client_address)
+        """Ejecuta el protocolo de DOWNLOAD en un hilo separado con un socket propio."""
+        sender_transport = UdpTransport(timeout=1.0)
+        try:
+            if protocol == "sw":
+                StopAndWait.send(sender_transport, path, client_address)
+            elif protocol == "sack":
+                SelectiveRepeat.send(sender_transport, path, client_address)
+        finally:
+            sender_transport.close()
 
     def stop(self):
         """Stop receiving packets and close the UDP transport."""

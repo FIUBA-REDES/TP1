@@ -90,7 +90,6 @@ class StopAndWait:
 
         while True:
             packet, address = transport.receive()
-
             # Si hay timeout, sumamos al contador.
             if packet is None:
                 consecutive_timeouts += 1
@@ -103,8 +102,11 @@ class StopAndWait:
             # Reiniciamos el contador porque llegó un paquete válido
             consecutive_timeouts = 0
 
-            if address != server_address:
+            # Validamos que provenga de la misma IP (ignora si el servidor cambió de puerto)
+            if address[0] != server_address[0]:
                 continue
+            # Fijamos la dirección activa al socket emisor real
+            server_address = address
 
             if packet.opcode == Packet.OP_DATA:
                 ack_num = packet.seq_num
