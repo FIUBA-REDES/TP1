@@ -48,17 +48,31 @@ class FileTransferServer:
                 return
 
             # 2. Si es un cliente nuevo iniciando conexión
-        if packet.opcode == Packet.OP_START:
-            client_session = Session(self.transport, client_address)
-            self.sessions[client_address] = client_session
+            if packet.opcode == Packet.OP_START:
+                        client_session = Session(self.transport, client_address, self.storage_dir)
+                        self.sessions[client_address] = client_session
+                        payload_str = packet.payload.decode("utf-8", errors="ignore")
 
-            payload_str = packet.payload.decode("utf-8", errors="ignore")
+                        # 1. Si es solicitud de DOWNLOAD
+                        if payload_str.startswith("DOWNLOAD:"):
+                            file_name = payload_str[len("DOWNLOAD:"):]
+                            file_path = os.path.join(self.storage_dir, file_name)
+                            if not os.path.isfile(file_path):
+                                err_pkt = Packet(Packet.OP_ERROR, packet.seq_num, 0, b"Archivo no encontrado")
+                                self.transport.send(err_pkt, client_address)
+                                del self.sessions[client_address]
+                                return
 
-            if not payload_str:
-                
-                client_session.start_session(packet)
-                self.executor.submit(client_session.process_packets)
-                return
+                            # Confirmar inicio de descarga
+                            self.transport.send(ack(packet.seq_num), client_address)
+                            # Ejecutar el envío hacia el cliente en el pool de threads
+                            self.executor.submit(self._worker_task, client_session, "DOWNLOAD", "sw", file_path, client_address)
+                            return
+
+                        # 2. Si es solicitud de UPLOAD (o tests con payload vacio)
+                        client_session.start_session(packet)
+                        self.executor.submit(client_session.process_packets)
+                        return
 
     def _worker_task(self, client_session, action, protocol, path, client_address):
         """Tarea que ejecuta el protocolo de transferencia en un hilo separado."""
