@@ -2,10 +2,17 @@ import time
 import select
 from .protocol import Packet
 
-MAX_TRIES = 12
-WINDOW_SIZE = 32
-CHUNK_SIZE = 1024
-SACK_SIZE = 4
+MAX_TRIES = 12       # máximo de reintentos por paquete / FIN
+WINDOW_SIZE = 32     # tamaño de la ventana Selective Repeat
+CHUNK_SIZE = 1024    # bytes de payload por paquete de datos
+SACK_SIZE = 4        # bytes por número de secuencia en el campo SACK
+
+INITIAL_RTO = 0.5    # retransmission timeout inicial (segundos)
+ACK_POLL_TIMEOUT = 0.02   # tiempo máximo esperando ACKs entre iteraciones
+FIN_ACK_WAIT = 0.05       # timeout de cada intento de ACK dentro del FIN loop
+FIN_RETRY_WAIT = 0.2      # timeout esperando re-FIN del emisor tras completar
+FIN_GRACE_PERIOD = 1.0    # duración total del período de gracia post-FIN
+POLL_SLEEP = 0.01         # sleep del polling cuando no hay socket real
 
 
 class SelectiveRepeat:
@@ -49,7 +56,7 @@ class SelectiveRepeat:
                 else:
                     if remaining == 0:
                         return None, None
-                    time.sleep(min(0.01, remaining))
+                    time.sleep(min(POLL_SLEEP, remaining))
 
             packet, address = transport.receive()
             if packet is None:
@@ -65,7 +72,7 @@ class SelectiveRepeat:
     def receive_acks(transport, server_address, packets, base_seq, next_seq):
         while True:
             ack_packet, _ = SelectiveRepeat.receive_with_timeout(
-                transport, server_address, 0.02)
+                transport, server_address, ACK_POLL_TIMEOUT)
 
             if ack_packet is None:
                 break
@@ -113,7 +120,7 @@ class SelectiveRepeat:
     @staticmethod
     def handshake_and_fin(transport, server_address, next_seq):
         fin_pkt = Packet(Packet.OP_FIN, next_seq, 0, b"")
-        RTO = 0.5
+        RTO = INITIAL_RTO
 
         for _ in range(MAX_TRIES):
             transport.send(fin_pkt, server_address)
@@ -121,7 +128,7 @@ class SelectiveRepeat:
             start_time = time.time()
             while time.time() - start_time < RTO:
                 ack_packet, _ = SelectiveRepeat.receive_with_timeout(
-                    transport, server_address, 0.05)
+                    transport, server_address, FIN_ACK_WAIT)
 
                 if ack_packet is not None:
                     if (ack_packet.opcode == Packet.OP_ACK and
@@ -142,7 +149,7 @@ class SelectiveRepeat:
         next_seq = 0
         base_seq = 0
         eof = False
-        RTO = 0.5
+        RTO = INITIAL_RTO
 
         with open(file_path, "rb") as file:
             while not eof or packets:
@@ -176,10 +183,10 @@ class SelectiveRepeat:
 
     @staticmethod
     def retry_reply_fin_ack(transport, server_address, expected_seq):
-        end_time = time.time() + 1.0
+        end_time = time.time() + FIN_GRACE_PERIOD
         while time.time() < end_time:
             pkt, addr = SelectiveRepeat.receive_with_timeout(
-                transport, server_address, 0.2)
+                transport, server_address, FIN_RETRY_WAIT)
             if pkt is not None and pkt.opcode == Packet.OP_FIN:
                 ack_packet = Packet(
                     Packet.OP_ACK, pkt.seq_num, expected_seq, b"")

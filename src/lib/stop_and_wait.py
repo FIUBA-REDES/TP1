@@ -2,7 +2,8 @@ import logging
 from .protocol import Packet
 
 MAX_TRIES = 5
-
+FIN_TIMEOUT = 0.5  # Tiempo de espera para recibir un ACK del FIN
+CHUNK_SIZE = 1024  # Tamaño de cada chunk de datos a enviar
 
 class StopAndWait:
 
@@ -28,7 +29,7 @@ class StopAndWait:
             return False
 
         with open(file_path, "rb") as file:
-            data = file.read(1024)
+            data = file.read(CHUNK_SIZE)
             seq_num = 0
             ack_num = 0
 
@@ -56,7 +57,7 @@ class StopAndWait:
                     transport.send(err_pkt, server_address)
                     return False
 
-                data = file.read(1024)
+                data = file.read(CHUNK_SIZE)
                 seq_num += 1
 
             fin_packet = Packet(
@@ -129,7 +130,7 @@ class StopAndWait:
                     transport.send(packet_ack, address)
 
                     # Esperamos brevemente por si el ACK se perdió
-                    transport.set_timeout(0.5)
+                    transport.set_timeout(FIN_TIMEOUT)
                     for _ in range(MAX_TRIES):
                         extra_pkt, extra_addr = transport.receive()
                         if extra_pkt is None:
