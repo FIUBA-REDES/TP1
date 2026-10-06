@@ -4,7 +4,11 @@ PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 FLAKE8 := $(VENV)/bin/flake8
 
-.PHONY: all setup install-deps ensure-deps venv init-project lint check-mininet test-mininet run-mininet clean
+# Directorios para el plugin de Wireshark
+USER_PLUGIN_DIR := $(HOME)/.local/lib/wireshark/plugins
+ROOT_PLUGIN_DIR := /root/.local/lib/wireshark/plugins
+
+.PHONY: all setup install-deps ensure-deps venv init-project install-plugin lint check-mininet test-mininet run-mininet clean
 
 all: setup
 
@@ -37,6 +41,19 @@ init-project: venv
 	fi
 	chmod +x src/upload src/download src/start-server
 
+# 4. Instala el plugin de Wireshark para el usuario actual y para root (Mininet)
+install-plugin:
+	@if [ -f src/lib/mi_plugin.lua ]; then \
+		echo "Instalando plugin de Wireshark..."; \
+		mkdir -p $(USER_PLUGIN_DIR); \
+		cp src/lib/mi_plugin.lua $(USER_PLUGIN_DIR)/; \
+		sudo mkdir -p $(ROOT_PLUGIN_DIR); \
+		sudo cp src/lib/mi_plugin.lua $(ROOT_PLUGIN_DIR)/; \
+		echo "Plugin instalado en $(USER_PLUGIN_DIR) y $(ROOT_PLUGIN_DIR)"; \
+	else \
+		echo "Advertencia: No se encontro src/lib/mi_plugin.lua. Omitiendo instalacion del plugin."; \
+	fi
+
 # Instala únicamente las dependencias que todavía no estén disponibles
 ensure-deps:
 	@if ! command -v mn >/dev/null 2>&1 || ! dpkg -s openvswitch-switch >/dev/null 2>&1; then \
@@ -46,8 +63,8 @@ ensure-deps:
 		$(MAKE) venv; \
 	fi
 
-# Configuración inicial completa
-setup: ensure-deps init-project
+# Configuración inicial completa (ahora incluye la instalación del plugin)
+setup: ensure-deps init-project install-plugin
 
 # Ejecuta el linter PEP8 exigido por la cátedra
 lint: ensure-deps
