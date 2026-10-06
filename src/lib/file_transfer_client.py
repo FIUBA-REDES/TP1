@@ -1,3 +1,5 @@
+import logging
+
 from .protocol import Packet, handshake_start
 from .transport import UdpTransport
 from .stop_and_wait import MAX_TRIES, StopAndWait
@@ -43,15 +45,17 @@ class FileTransferClient:
                 and address == self.server_address
                 and ack_packet.opcode == Packet.OP_ERROR
             ):
-                print(
+                logging.error(
                     "Error del servidor: " +
                     ack_packet.payload.decode(
                         "utf-8",
-                        errors="replace"))
+                        errors="replace"
+                    )  
+                )
                 self.connected = False
                 return False
 
-        print("Error: no se recibió ACK del handshake.")
+        logging.error("Error: no se recibió ACK del handshake.")
         self.connected = False
         return False
 
@@ -61,23 +65,24 @@ class FileTransferClient:
         if protocolo == "sw":
             if (StopAndWait.send(self.transport, source_path,
                                  self.server_address)) is False:
-                print("Error: Failed to send the file "
-                      "using Stop-and-Wait protocol.")
+                logging.error("Error: Failed to send the file "
+                      "using Stop-and-Wait protocol."
+                )
                 return
             else:
-                print(
+                logging.info(
                     f"File '{source_path}' sent successfully "
                     "using Stop-and-Wait protocol."
-                    )
+                )
 
         elif protocolo == "sack":
             if not SelectiveRepeat.send(
                     self.transport, source_path, self.server_address):
-                print("Error: Failed to send the file "
+                logging.error("Error: Failed to send the file "
                       "using Selective Repeat protocol.")
                 return
             else:
-                print(
+                logging.info(
                     f"File '{source_path}' sent successfully "
                     "using Selective Repeat protocol."
                     )
@@ -94,11 +99,11 @@ class FileTransferClient:
 
             if StopAndWait.receive(self.transport, destination_path,
                                    self.server_address) is False:
-                print("Error: Failed to receive the file "
+                logging.error("Error: Failed to receive the file "
                       "using Stop-and-Wait protocol.")
                 return
             else:
-                print(
+                logging.info(
                     f"File '{destination_path}' received successfully "
                     "using Stop-and-Wait protocol."
                     )
@@ -109,11 +114,11 @@ class FileTransferClient:
 
             if not SelectiveRepeat.receive(
                     self.transport, destination_path, self.server_address):
-                print("Error: Failed to receive the file using "
+                logging.error("Error: Failed to receive the file using "
                       "Selective Repeat protocol.")
                 return
             else:
-                print(
+                logging.info(
                     f"File '{destination_path}' received successfully "
                     "using Selective Repeat protocol."
                     )

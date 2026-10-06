@@ -1,7 +1,7 @@
 import argparse
 from lib.file_transfer_client import FileTransferClient
 import lib.args_verifier as args_verifier
-
+import logging
 
 def main():
     parser = argparse.ArgumentParser()
@@ -27,6 +27,22 @@ def main():
         help="Protocol error recovery protocol")
 
     args = parser.parse_args()
+
+    if args.verbose:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(message)s"
+    )
+    elif args.quiet:
+        logging.basicConfig(
+            level=logging.ERROR,
+            format="%(message)s"
+    )
+    else:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(message)s"
+    )
 
     if args_verifier.verify_client_args(args) is False:
         return

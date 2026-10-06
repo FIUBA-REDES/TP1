@@ -4,7 +4,7 @@ import os
 import argparse
 from lib.file_transfer_server import FileTransferServer
 import lib.args_verifier as args_verifier
-
+import logging
 
 def main():
     parser = argparse.ArgumentParser(description="File Transfer Server")
@@ -39,6 +39,22 @@ def main():
         help="Directorio donde guardar los archivos")
 
     args = parser.parse_args()
+
+    if args.verbose:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(message)s"
+        )
+    elif args.quiet:
+        logging.basicConfig(
+            level=logging.ERROR,
+            format="%(message)s"
+        )
+    else:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(message)s"
+        )
 
     if not args_verifier.verify_server_args(args):
         return

@@ -1,3 +1,5 @@
+import logging
+
 from .protocol import Packet
 import os
 from queue import Queue
@@ -85,7 +87,7 @@ class Session:
             return
 
         if packet.opcode == Packet.OP_FIN:
-            print(f"FIN recibido: seq={packet.seq_num}")
+            logging.debug(f"FIN recibido: seq={packet.seq_num}")
 
             self.fin_received = True
             self.fin_seq = packet.seq_num
@@ -98,7 +100,7 @@ class Session:
             return
 
         if packet.opcode == Packet.OP_ERROR:
-            print(
+            logging.error(
                 "Error del cliente: "
                 + packet.payload.decode(
                     "utf-8",
@@ -119,7 +121,7 @@ class Session:
             with open(path, "wb") as file:
                 file.write(self.file_bytes)
 
-        print(
+        logging.info(
             f"Transferencia completada: "
             f"{len(self.file_bytes)} bytes"
         )

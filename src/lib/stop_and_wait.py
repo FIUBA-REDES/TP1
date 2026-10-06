@@ -1,3 +1,4 @@
+import logging
 from .protocol import Packet
 
 MAX_TRIES = 5
@@ -8,6 +9,10 @@ class StopAndWait:
     def send(transport, file_path, server_address):
         def send_and_wait(packet):
             for _ in range(MAX_TRIES):
+                logging.debug(
+                    f"Enviando paquete seq={packet.seq_num} "
+                )
+
                 transport.send(packet, server_address)
                 ack_packet, address = transport.receive()
                 if (
@@ -16,6 +21,9 @@ class StopAndWait:
                     and ack_packet.opcode == Packet.OP_ACK
                     and ack_packet.seq_num == packet.seq_num
                 ):
+                    logging.debug(
+                        f"ACK recibido seq={ack_packet.seq_num}"
+                    )
                     return True
             return False
 
@@ -34,7 +42,7 @@ class StopAndWait:
                     data
                 )
                 if not send_and_wait(packet):
-                    print(
+                    logging.error(
                         "No se recibió ACK del servidor en "
                         + str(MAX_TRIES)
                         + " intentos."
@@ -58,7 +66,7 @@ class StopAndWait:
                 b""
             )
             if not send_and_wait(fin_packet):
-                print(
+                logging.error(
                     "No se recibió ACK del FIN en "
                     + str(MAX_TRIES)
                     + " intentos."
@@ -86,8 +94,8 @@ class StopAndWait:
             if packet is None:
                 consecutive_timeouts += 1
                 if consecutive_timeouts >= MAX_TRIES:
-                    print("Error: Conexión interrumpida, "
-                          "se superó el límite de timeouts.")
+                    logging.error("Error: Conexión interrumpida, "
+                                  "se superó el límite de timeouts.")
                     return False
                 continue
 
