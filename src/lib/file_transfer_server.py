@@ -127,13 +127,16 @@ class FileTransferServer:
     def handle_packet(self, packet, client_address):
         """Register a new client and dispatch its packet."""
         with self.lock:
-            # 1. Si la sesión ya existe para este cliente, encolar el paquete
-            # en su sesión.
+            # Si el cliente ya existe pero ya terminó su transferencia,
+            # o si manda un START nuevo, se reinicia la sesión para permitir transferencias consecutivas
             if client_address in self.sessions:
-                self.sessions[client_address].enqueue(packet)
-                return
+                if packet.opcode == Packet.OP_START or self.sessions[client_address].completed:
+                    self.sessions.pop(client_address, None)
+                else:
+                    self.sessions[client_address].enqueue(packet)
+                    return
 
-            # 2. Si es un cliente nuevo iniciando conexión
+            # Si es un cliente nuevo iniciando conexión
             if packet.opcode == Packet.OP_START:
                 self.verify_and_execute_type_of_new_packet(
                     packet, client_address)
