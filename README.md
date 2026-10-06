@@ -69,6 +69,79 @@ pantalla `Plugin cargado correctamente`
 Elegir la opción de s3-eth5 para capturar los paquetes que se envían al 
 servidor a través del puerto default 5005.
 
+
+
+
+
+
+
+## Ejecución de la Aplicación
+
+Los scripts ejecutables se encuentran dentro de src/ y soportan los protocolos Stop & Wait (sw) y TCP con SACK (sack).
+
+### 1. Iniciar el Servidor
+
+Inicia el servidor en una dirección IP y puerto específicos, definiendo la carpeta de almacenamiento de archivos:
+```bash
+# Ejemplo: Servidor escuchando en 10.0.0.5:5005 con almacenamiento en 'storage'
+./src/start-server -H 10.0.0.5 -p 5005 -s storage -v
+```
+
+#### Parámetros de start-server:
+- -H, --host: Dirección IPv4 donde escucha el servidor (por defecto 127.0.0.1).
+- -p, --port: Puerto UDP de escucha (rango 1024 a 65535, por defecto 5005).
+- -s, --storage: Ruta del directorio donde se almacenan y buscan los archivos (por defecto storage).
+- -v, --verbose: Aumenta el nivel de detalle de la salida por consola (mutuamente excluyente con -q).
+- -q, --quiet: Reduce la salida por consola al mínimo (mutuamente excluyente con -v).
+
+### 2. Subir un Archivo (UPLOAD)
+
+Envía un archivo local hacia el servidor remoto
+```bash
+# Subida usando Stop & Wait
+./src/upload -H 10.0.0.5 -p 5005 -s ./origen.bin -n destino.bin -r sw -v
+
+# Subida usando TCP con SACK
+./src/upload -H 10.0.0.5 -p 5005 -s ./origen.bin -n destino.bin -r sack -v
+```
+
+#### Parámetros de upload:
+
+- -H, --host: Dirección IPv4 del servidor remoto.
+- -p, --port: Puerto UDP del servidor.
+- -s, --src: Ruta del archivo local de origen que se desea transferir.
+- -n, --name: Nombre con el que se guardará el archivo en el servidor.
+- -r, --protocol: Protocolo de transferencia confiable a utilizar (sw o sack).
+- -v, --verbose / -q, --quiet: Modos de salida detallada o silenciosa.
+
+
+
+### 3. Descargar un Archivo (DOWNLOAD)
+Solicita y descarga un archivo presente en el servidor, guardándolo en la ruta local elegida.
+```bash
+# Descarga usando Stop & Wait
+./src/download -H 10.0.0.5 -p 5005 -d ./recibido.bin -n destino.bin -r sw -v
+
+# Descarga usando TCP con SACK
+./src/download -H 10.0.0.5 -p 5005 -d ./recibido.bin -n destino.bin -r sack -v
+```
+
+#### Parámetros de download:
+
+- -H, --host: Dirección IPv4 del servidor remoto.
+- -p, --port: Puerto UDP del servidor.
+- -d, --dst: Ruta local de destino donde se guardará el archivo descargado.
+- -n, --name: Nombre del archivo remoto a solicitar en el servidor.
+- -r, --protocol: Protocolo de transferencia confiable a utilizar (sw o sack).
+- -v, --verbose / -q, --quiet: Modos de salida detallada o silenciosa.
+
+
+
+
+
+
+
+
 ## Comandos disponibles
 
 ### Verificar el estilo
