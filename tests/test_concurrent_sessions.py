@@ -169,3 +169,33 @@ def test_sessions_do_not_mix_their_data():
 
     finally:
         server.stop()
+
+
+def test_session_cleaned_up_on_timeout():
+    """Verifica que si un cliente abandona, la sesión expira y el servidor la limpia."""
+    from lib.session import TIMEOUT
+    import time
+
+    server = FileTransferServer()
+    server.transport.close()
+    server.transport = RecordingTransport()
+
+    abandoned_client = ("127.0.0.1", 44001)
+
+    try:
+        # El cliente inicia pero nunca más manda datos ni OP_FIN
+        server.handle_packet(
+            Packet(Packet.OP_START, 0, 0, b""),
+            abandoned_client,
+        )
+
+        assert abandoned_client in server.sessions
+
+        # Esperamos que se cumpla el TIMEOUT de la cola
+        time.sleep(TIMEOUT + 0.5)
+
+        # La sesión debió marcarse como abortada y removerse de server.sessions
+        assert abandoned_client not in server.sessions
+
+    finally:
+        server.stop()

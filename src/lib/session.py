@@ -1,17 +1,20 @@
-import logging
-
-from .protocol import Packet
 import os
-from queue import Queue
+import time
+import logging
+from queue import Queue, Empty
+from .protocol import Packet
+
+TIMEOUT = 5
 
 
 class Session:
     """State and packet handling for one client transfer."""
 
-    def __init__(self, transport, client_address, storage_dir=None):
+    def __init__(self, transport, client_address, storage_dir=None, on_close=None):
         self.transport = transport
         self.client_address = client_address
         self.storage_dir = storage_dir
+        self.on_close = on_close
         self.remote_name = None
         self.packets = Queue()
         self.chunks = {}
@@ -21,6 +24,7 @@ class Session:
         self.file_bytes = b""
         self.fin_received = False
         self.fin_seq = None
+        self.aborted = False
 
     def send_ack(self, packet):
         sack_payload = bytearray()
@@ -50,24 +54,31 @@ class Session:
             ),
             self.client_address
         )
-
     def enqueue(self, packet):
         self.packets.put(packet)
 
     def process_packets(self):
-        while True:
-            packet = self.packets.get()
-
-            try:
-                if packet is None:
+        try:
+            while True:
+                try:
+                    packet = self.packets.get(timeout=TIMEOUT)
+                except Empty:
+                    self.aborted = True
                     return
 
-                self.update_session(packet)
+                try:
+                    if packet is None:
+                        return
 
-                if self.completed:
-                    return
-            finally:
-                self.packets.task_done()
+                    self.update_session(packet)
+
+                    if self.completed:
+                        return
+                finally:
+                    self.packets.task_done()
+        finally:
+            if self.on_close is not None:
+                self.on_close(self)
 
     def update_session(self, packet):
         if packet.opcode == Packet.OP_DATA:

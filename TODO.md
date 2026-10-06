@@ -37,7 +37,7 @@
 - [x] Gestión de sesiones por cliente (`Session`) y guardado en disco con `--storage`.
 - [x] Soporte de UPLOAD y DOWNLOAD en el servidor usando Stop & Wait.
 - [x] Soporte dinámico de DOWNLOAD con protocolo SACK (`SelectiveRepeat`).
-- [ ] Limpieza automática de sesiones terminadas o abandonadas por timeout en el servidor.
+- [x] Limpieza automática de sesiones terminadas o abandonadas por timeout en el servidor.
 
 ### Cliente (`src/lib/file_transfer_client.py`)
 - [x] Handshake `OP_START` para inicio de conexión.

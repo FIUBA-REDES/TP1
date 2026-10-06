@@ -9,7 +9,7 @@ from threading import Lock
 
 
 class FileTransferServer:
-    """Server skeleton for receiving file transfer requests over UDP."""
+
 
     def __init__(self, host="127.0.0.1", port=5005,
                  timeout=None, storage_dir="storage"):
@@ -24,10 +24,19 @@ class FileTransferServer:
         if not os.path.exists(self.storage_dir):
             os.makedirs(self.storage_dir)
 
+    def _cleanup_session(self, session):
+        """Callback invoked by Session when it finishes or aborts."""
+        if session.aborted:
+            with self.lock:
+                self.sessions.pop(session.client_address, None)
+
+
+
     def start(self):
         """Bind the server socket and prepare the receive loop."""
         self.transport.bind(*self.address)
         self.running = True
+
 
     def serve_forever(self):
         """Receive packets and dispatch them while the server is running."""
@@ -52,7 +61,11 @@ class FileTransferServer:
             # 2. Si es un cliente nuevo iniciando conexión
             if packet.opcode == Packet.OP_START:
                 client_session = Session(
-                    self.transport, client_address, self.storage_dir)
+                    self.transport,
+                    client_address,
+                    self.storage_dir,
+                    on_close=self._cleanup_session,
+                )
                 self.sessions[client_address] = client_session
                 payload_str = packet.payload.decode("utf-8", errors="ignore")
 
