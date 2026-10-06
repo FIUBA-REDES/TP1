@@ -54,17 +54,21 @@ make all
 
 ## Configurar plugin de Wireshark
 
-Mover el archivo `mi_plugin.lua` dentro de la carpeta personal 
-`/home/MI_CUENTA/.local/lib/wireshark/plugins/`
+Al hacer `make all` o `make setup` se instala automaticamente la extension de lua en las carpetas de extensiones de wireshark (la reconocida en la ultima version, por lo menos).
+
+
+En caso de que no ande, mover el archivo `mi_plugin.lua` dentro de la carpeta de carga de plugins de lua `Personal Lua Plugins` y tambien en la del usuario (revisar en el propio wireshark, por si es diferente), las cuales suelen ser tanto:
+`/root/.local/lib/wireshark/plugins` usando `cp` con sudo
+`/root/user/.local/lib/wireshark/plugins` usando `cp` sin sudo
 
 
 En una terminal ejecutar el comando 
 ```
-sudo mn --custom src/lib/topologia.py --topo mytopo --mac
+make run-mininet
 ```
 
 Abrir otra terminal y ejecutar el comando `wireshark` y debería verse por 
-pantalla `Plugin cargado correctamente`
+la terminal `Plugin cargado correctamente`
 
 Elegir la opción de s3-eth5 para capturar los paquetes que se envían al 
 servidor a través del puerto default 5005.
