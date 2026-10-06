@@ -62,7 +62,7 @@ class SelectiveRepeat:
             if packet is None:
                 if timeout is None:
                     return None, None
-            elif address == expected_address:
+            elif address[0] == expected_address[0]:
                 return packet, address
 
             if timeout is not None and time.time() - start_time >= timeout:
@@ -210,6 +210,8 @@ class SelectiveRepeat:
                     if consecutive_timeouts >= MAX_TRIES:
                         return False
                     continue
+
+                server_address = address
 
                 consecutive_timeouts = 0
 
