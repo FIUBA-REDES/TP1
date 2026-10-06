@@ -49,6 +49,86 @@ class FileTransferServer:
             if packet is not None:
                 self.handle_packet(packet, client_address)
 
+
+
+
+    def set_protocol_action_and_file_name_from_payload(self, payload_str):
+
+        if payload_str.startswith("DOWNLOAD:"):
+            parts = payload_str.split(":", 2)
+            if len(parts) == 3 and parts[1] in ("sw", "sack"):
+                req_protocol = parts[1]
+                file_name = parts[2]
+            else:
+                req_protocol = "sw"
+                file_name = payload_str[len("DOWNLOAD:"):]
+        elif payload_str.startswith("UPLOAD:"):
+            parts = payload_str.split(":", 2)
+            if len(parts) == 3 and parts[1] in ("sw", "sack"):
+                req_protocol = parts[1]
+                file_name = parts[2]
+            else:
+                req_protocol = "sw"
+                file_name = payload_str[len("UPLOAD:"):]
+        else:
+            req_protocol = "sw"
+            file_name = payload_str
+
+        return req_protocol, file_name
+
+    def verify_and_execute_type_of_new_packet(self, packet, client_address):
+
+        client_session = Session(
+            self.transport,
+            client_address,
+            self.storage_dir,
+            on_close=self._cleanup_session,
+        )
+
+        self.sessions[client_address] = client_session
+        payload_str = packet.payload.decode("utf-8", errors="ignore")
+
+        # Payload vacío: modo test, sin transferencia real
+        if not payload_str:
+            client_session.start_session(packet)
+            self.executor.submit(client_session.process_packets)
+            return
+
+        req_protocol, file_name = self.set_protocol_action_and_file_name_from_payload(payload_str)
+
+        # 1. Si es solicitud de DOWNLOAD
+        if payload_str.startswith("DOWNLOAD:"):
+
+            file_path = os.path.join(self.storage_dir, file_name)
+            if not os.path.isfile(file_path):
+                err_pkt = Packet(Packet.OP_ERROR, packet.seq_num, 0, b"Archivo no encontrado")
+                self.transport.send(err_pkt, client_address)
+                del self.sessions[client_address]
+                return
+
+            client_session.start_session(packet)
+
+            # Ejecutar el envío hacia el cliente en el pool de threads
+            self.executor.submit(
+                self._worker_task,
+                client_session,
+                "DOWNLOAD",
+                req_protocol,
+                file_path,
+                client_address)
+            return
+
+        # 2. Si es solicitud de UPLOAD
+        # Los paquetes llegan via enqueue() → process_packets() los ensambla y guarda
+        client_session.remote_name = file_name
+        client_session.start_session(packet)
+        self.executor.submit(client_session.process_packets)
+        return
+
+
+
+
+
     def handle_packet(self, packet, client_address):
         """Register a new client and dispatch its packet."""
         with self.lock:
@@ -60,71 +140,17 @@ class FileTransferServer:
 
             # 2. Si es un cliente nuevo iniciando conexión
             if packet.opcode == Packet.OP_START:
-                client_session = Session(
-                    self.transport,
-                    client_address,
-                    self.storage_dir,
-                    on_close=self._cleanup_session,
-                )
-                self.sessions[client_address] = client_session
-                payload_str = packet.payload.decode("utf-8", errors="ignore")
-
-                # 1. Si es solicitud de DOWNLOAD
-                if payload_str.startswith("DOWNLOAD:"):
-                    parts = payload_str.split(":", 2)
-                    if len(parts) == 3 and parts[1] in ("sw", "sack"):
-                        req_protocol = parts[1]
-                        file_name = parts[2]
-                    else:
-                        req_protocol = "sw"
-                        file_name = payload_str[len("DOWNLOAD:"):]
-
-                    file_path = os.path.join(self.storage_dir, file_name)
-                    if not os.path.isfile(file_path):
-                        err_pkt = Packet(Packet.OP_ERROR, packet.seq_num, 0, b"Archivo no encontrado")
-                        self.transport.send(err_pkt, client_address)
-                        del self.sessions[client_address]
-                        return
-
-                    # Confirmar inicio de descarga
-                    self.transport.send(ack(packet.seq_num), client_address)
-                    
-                    # Ejecutar el envío hacia el cliente en el pool de threads
-                    self.executor.submit(
-                        self._worker_task,
-                        client_session,
-                        "DOWNLOAD",
-                        req_protocol, 
-                        file_path,
-                        client_address)
-                    return
-
-                # 2. Si es solicitud de UPLOAD (o tests con payload vacio)
-                client_session.start_session(packet)
-                self.executor.submit(client_session.process_packets)
+                self.verify_and_execute_type_of_new_packet(packet, client_address)
                 return
+            
 
     def _worker_task(self, client_session, action,
                      protocol, path, client_address):
-        # Tarea que ejecuta el protocolo de transferencia en un hilo separado.
-        try:
-            if protocol == "sw":
-                if action == "DOWNLOAD":
-                    StopAndWait.send(client_session, path, client_address)
-                elif action == "UPLOAD":
-                    StopAndWait.receive(client_session, path, client_address)
-
-            elif protocol == "sack":
-                if action == "DOWNLOAD":
-                    SelectiveRepeat.send(client_session, path, client_address)
-                elif action == "UPLOAD":
-                    SelectiveRepeat.receive(
-                        client_session, path, client_address)
-        finally:
-            # Una vez finalizada la transferencia, borramos la sesión
-            with self.lock:
-                if client_address in self.sessions:
-                    del self.sessions[client_address]
+        """Ejecuta el protocolo de DOWNLOAD en un hilo separado."""
+        if protocol == "sw":
+            StopAndWait.send(client_session, path, client_address)
+        elif protocol == "sack":
+            SelectiveRepeat.send(client_session, path, client_address)
 
     def stop(self):
         """Stop receiving packets and close the UDP transport."""

@@ -44,7 +44,8 @@ class Session:
         self.transport.send(ack_packet, self.client_address)
 
     def start_session(self, packet):
-        self.remote_name = packet.payload.decode("utf-8")
+        if self.remote_name is None:
+            self.remote_name = packet.payload.decode("utf-8")
         self.transport.send(
             Packet(
                 Packet.OP_ACK,
