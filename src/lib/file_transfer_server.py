@@ -128,9 +128,11 @@ class FileTransferServer:
         """Register a new client and dispatch its packet."""
         with self.lock:
             # Si el cliente ya existe pero ya terminó su transferencia,
-            # o si manda un START nuevo, se reinicia la sesión para permitir transferencias consecutivas
+            # o si manda un START nuevo, se reinicia la sesión para
+            # permitir transferencias consecutivas
             if client_address in self.sessions:
-                if packet.opcode == Packet.OP_START or self.sessions[client_address].completed:
+                if packet.opcode == Packet.OP_START or \
+                        self.sessions[client_address].completed:
                     self.sessions.pop(client_address, None)
                 else:
                     self.sessions[client_address].enqueue(packet)
