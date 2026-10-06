@@ -149,7 +149,7 @@ class StopAndWait:
                     transport.send(packet_ack, address)
 
             elif packet.opcode == Packet.OP_ERROR:
-                print(
+                logging.error(
                     "Error del servidor: "
                     + packet.payload.decode("utf-8", errors="replace")
                 )
