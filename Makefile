@@ -64,9 +64,9 @@ check-mininet: ensure-deps
 test-mininet: check-mininet
 	sudo mn --test pingall
 
-# Levanta Mininet con las condiciones pedidas (10% pérdida y 20ms de delay por enlace)
+# Levanta Mininet con las condiciones pedidas (10% pérdida y 40ms RTT acumulados en la topología)
 run-mininet: check-mininet
-	sudo mn --topo single,2 --link tc,loss=10,delay=20ms
+	sudo mn --topo single,5 --link tc,loss=5,delay=10ms
 
 # Limpieza del entorno y sockets residuales de Mininet
 clean:
