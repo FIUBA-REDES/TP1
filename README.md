@@ -57,9 +57,9 @@ make all
 Al hacer `make all` o `make setup` se instala automaticamente la extension de lua en las carpetas de extensiones de wireshark (la reconocida en la ultima version, por lo menos).
 
 
-En caso de que no ande,mover el archivo `mi_plugin.lua` dentro de la carpeta de carga de plugins de lua `Personal Lua Plugins` y tambien en la del usuario (revisar en el propio wireshark, por si es diferente), las cuales suelen ser tanto:
-`/root/.local/lib/wireshark/plugins` usando `cp` sin sudo
-`/root/user/.local/lib/wireshark/plugins` usando `cp` con sudo
+En caso de que no ande, mover el archivo `mi_plugin.lua` dentro de la carpeta de carga de plugins de lua `Personal Lua Plugins` y tambien en la del usuario (revisar en el propio wireshark, por si es diferente), las cuales suelen ser tanto:
+`/root/.local/lib/wireshark/plugins` usando `cp` con sudo
+`/root/user/.local/lib/wireshark/plugins` usando `cp` sin sudo
 
 
 En una terminal ejecutar el comando 
@@ -67,8 +67,8 @@ En una terminal ejecutar el comando
 make run-mininet
 ```
 
-Abrir otra terminal y ejecutar el comando `sudo wireshark` y debería verse por 
-pantalla `Plugin cargado correctamente`
+Abrir otra terminal y ejecutar el comando `wireshark` y debería verse por 
+la terminal `Plugin cargado correctamente`
 
 Elegir la opción de s3-eth5 para capturar los paquetes que se envían al 
 servidor a través del puerto default 5005.
