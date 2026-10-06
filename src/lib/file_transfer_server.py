@@ -58,23 +58,30 @@ class FileTransferServer:
 
                 # 1. Si es solicitud de DOWNLOAD
                 if payload_str.startswith("DOWNLOAD:"):
-                    file_name = payload_str[len("DOWNLOAD:"):]
+                    parts = payload_str.split(":", 2)
+                    if len(parts) == 3 and parts[1] in ("sw", "sack"):
+                        req_protocol = parts[1]
+                        file_name = parts[2]
+                    else:
+                        req_protocol = "sw"
+                        file_name = payload_str[len("DOWNLOAD:"):]
+
                     file_path = os.path.join(self.storage_dir, file_name)
                     if not os.path.isfile(file_path):
-                        err_pkt = Packet(Packet.OP_ERROR, packet.seq_num,
-                                         0, b"Archivo no encontrado")
+                        err_pkt = Packet(Packet.OP_ERROR, packet.seq_num, 0, b"Archivo no encontrado")
                         self.transport.send(err_pkt, client_address)
                         del self.sessions[client_address]
                         return
 
                     # Confirmar inicio de descarga
                     self.transport.send(ack(packet.seq_num), client_address)
+                    
                     # Ejecutar el envío hacia el cliente en el pool de threads
                     self.executor.submit(
                         self._worker_task,
                         client_session,
                         "DOWNLOAD",
-                        "sw",
+                        req_protocol, 
                         file_path,
                         client_address)
                     return

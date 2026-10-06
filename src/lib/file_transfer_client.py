@@ -89,7 +89,7 @@ class FileTransferClient:
         """Download a file from the server."""
 
         if protocol == "sw":
-            if not self.connect("DOWNLOAD:" + remote_name):
+            if not self.connect("DOWNLOAD:sw" + remote_name):
                 return
 
             if StopAndWait.receive(self.transport, destination_path,
@@ -104,7 +104,7 @@ class FileTransferClient:
                     )
 
         elif protocol == "sack":
-            if not self.connect("DOWNLOAD:" + remote_name):
+            if not self.connect("DOWNLOAD:sack" + remote_name):
                 return
 
             if not SelectiveRepeat.receive(
