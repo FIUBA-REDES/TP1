@@ -1,2 +1,26 @@
-*/__pycache__/*
-*.pyc
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest / Cache de testing
+.pytest_cache/
+.coverage
+htmlcov/
+tests/__pycache__/
+
+# Archivos temporales o de prueba generados
+storage/
+*.bin
+*.tmp
+*.log
+received.*
+
+# Entornos virtuales
+venv/
+env/
+.venv/
+
+# Wireshark / Capturas
+*.pcap
+*.pcapng
