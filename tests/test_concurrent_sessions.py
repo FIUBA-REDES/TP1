@@ -17,6 +17,13 @@ def wait_for_sessions(server, clients):
     for client in clients:
         server.sessions[client].packets.join()
 
+def wait_for_sessions(server, clients):
+    for client in clients:
+        with server.lock:
+            session = server.sessions.get(client)
+        if session is not None:
+            session.packets.join()
+
 
 def test_two_sessions_process_interleaved_packets_independently():
     server = FileTransferServer()
