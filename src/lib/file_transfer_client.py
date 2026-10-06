@@ -3,6 +3,7 @@ from .transport import UdpTransport
 from .stop_and_wait import MAX_TRIES, StopAndWait
 from .sack import SelectiveRepeat
 
+
 class FileTransferClient:
 
     def __init__(self, server_host, server_port, timeout=1.0):
@@ -42,7 +43,11 @@ class FileTransferClient:
                 and address == self.server_address
                 and ack_packet.opcode == Packet.OP_ERROR
             ):
-                print("Error del servidor: " + ack_packet.payload.decode("utf-8", errors="replace"))
+                print(
+                    "Error del servidor: " +
+                    ack_packet.payload.decode(
+                        "utf-8",
+                        errors="replace"))
                 self.connected = False
                 return False
 
@@ -52,47 +57,69 @@ class FileTransferClient:
 
     def upload(self, source_path, remote_name=None, protocolo=None):
         """Upload a local file to the server."""
-        
+
         if protocolo == "sw":
-            if StopAndWait.send(self.transport, source_path, self.server_address) == False:
-                print("Error: Failed to send the file using Stop-and-Wait protocol.")
+            if (StopAndWait.send(self.transport, source_path,
+                                 self.server_address)) is False:
+                print("Error: Failed to send the file "
+                      "using Stop-and-Wait protocol.")
                 return
             else:
-                print(f"File '{source_path}' sent successfully using Stop-and-Wait protocol.")
-            
+                print(
+                    f"File '{source_path}' sent successfully "
+                    "using Stop-and-Wait protocol."
+                    )
+
         elif protocolo == "sack":
-            if not SelectiveRepeat.send(self.transport,source_path,self.server_address):
-                print("Error: Failed to send the file using Selective Repeat protocol.")
+            if not SelectiveRepeat.send(
+                    self.transport, source_path, self.server_address):
+                print("Error: Failed to send the file "
+                      "using Selective Repeat protocol.")
                 return
             else:
-                print(f"File '{source_path}' sent successfully using Selective Repeat protocol.")
+                print(
+                    f"File '{source_path}' sent successfully "
+                    "using Selective Repeat protocol."
+                    )
         else:
-            raise ValueError("Invalid protocol specified. Choose 'sw' or 'sack'.")
-            
+            raise ValueError(
+                "Invalid protocol specified. Choose 'sw' or 'sack'.")
+
     def download(self, destination_path, remote_name=None, protocol=None):
         """Download a file from the server."""
-        
+
         if protocol == "sw":
             if not self.connect("DOWNLOAD:" + remote_name):
                 return
-            
-            if StopAndWait.receive(self.transport, destination_path, self.server_address) == False:
-                print("Error: Failed to receive the file using Stop-and-Wait protocol.")
+
+            if StopAndWait.receive(self.transport, destination_path,
+                                   self.server_address) is False:
+                print("Error: Failed to receive the file "
+                      "using Stop-and-Wait protocol.")
                 return
             else:
-                print(f"File '{destination_path}' received successfully using Stop-and-Wait protocol.")
+                print(
+                    f"File '{destination_path}' received successfully "
+                    "using Stop-and-Wait protocol."
+                    )
 
         elif protocol == "sack":
             if not self.connect("DOWNLOAD:" + remote_name):
                 return
 
-            if not SelectiveRepeat.receive(self.transport,destination_path,self.server_address):
-                print("Error: Failed to receive the file using Selective Repeat protocol.")
+            if not SelectiveRepeat.receive(
+                    self.transport, destination_path, self.server_address):
+                print("Error: Failed to receive the file using "
+                      "Selective Repeat protocol.")
                 return
             else:
-                print(f"File '{destination_path}' received successfully using Selective Repeat protocol.")
+                print(
+                    f"File '{destination_path}' received successfully "
+                    "using Selective Repeat protocol."
+                    )
         else:
-            raise ValueError("Invalid protocol specified. Choose 'sw' or 'sack'.")
+            raise ValueError(
+                "Invalid protocol specified. Choose 'sw' or 'sack'.")
 
     def close(self):
         """Close the UDP transport."""

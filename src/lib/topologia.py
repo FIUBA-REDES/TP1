@@ -1,7 +1,8 @@
 from mininet.topo import Topo
 from mininet.link import TCLink
 
-class MyTopo( Topo ):
+
+class MyTopo(Topo):
     "Simple topology example."
 
     def __init__(self):
@@ -17,7 +18,6 @@ class MyTopo( Topo ):
         Cliente_4 = self.addHost('h4')
         Servidor = self.addHost('h5')
 
-
         Switch = self.addSwitch('s3')
 
         # Add links
@@ -28,4 +28,4 @@ class MyTopo( Topo ):
         self.addLink(Servidor, Switch, cls=TCLink, loss=5, delay='10ms')
 
 
-topos = { 'mytopo': ( lambda: MyTopo() ) }
+topos = {'mytopo': (lambda: MyTopo())}

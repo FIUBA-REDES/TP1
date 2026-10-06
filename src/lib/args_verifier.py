@@ -50,7 +50,7 @@ def verify_client_args(args):
         if os.path.isdir(args.src):
             print(f"Error: The source path '{args.src}' is a directory.")
             return False
-        if os.path.isfile(args.src) == False:
+        if os.path.isfile(args.src) is False:
             print(f"Error: The source file '{args.src}' does not exist.")
             return False
     elif hasattr(args, "dst") and args.dst is not None:
@@ -67,9 +67,6 @@ def verify_client_args(args):
     else:
         print("Error: A source or destination file is required.")
         return False
-
-
-
 
     if not isinstance(args.name, str) or not args.name.strip():
         print("Error: The file name is not specified.")
@@ -90,8 +87,7 @@ def verify_client_args(args):
 
 def verify_server_args(args):
     """Verify the command-line arguments for the server."""
-    if verify_server_address(args.host, args.port) == False:
+    if verify_server_address(args.host, args.port) is False:
         return False
 
     return True
-

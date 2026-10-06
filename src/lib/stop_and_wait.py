@@ -2,6 +2,7 @@ from .protocol import Packet
 
 MAX_TRIES = 5
 
+
 class StopAndWait:
 
     def send(transport, file_path, server_address):
@@ -22,7 +23,7 @@ class StopAndWait:
             data = file.read(1024)
             seq_num = 0
             ack_num = 0
-            
+
             while data:
                 if seq_num != 0:
                     ack_num = seq_num - 1
@@ -39,10 +40,14 @@ class StopAndWait:
                         + " intentos."
                     )
                     # Enviar OP_ERROR antes de abortar
-                    err_pkt = Packet(Packet.OP_ERROR, packet.seq_num, 0, b"Transferencia abortada por reintentos de datos.")
+                    err_pkt = Packet(
+                        Packet.OP_ERROR,
+                        packet.seq_num,
+                        0,
+                        b"Transferencia abortada por reintentos de datos.")
                     transport.send(err_pkt, server_address)
                     return False
-                
+
                 data = file.read(1024)
                 seq_num += 1
 
@@ -59,13 +64,16 @@ class StopAndWait:
                     + " intentos."
                 )
                 # NUEVO: Enviar OP_ERROR antes de abortar
-                err_pkt = Packet(Packet.OP_ERROR, seq_num, 0, b"Transferencia abortada por reintentos de FIN.")
+                err_pkt = Packet(
+                    Packet.OP_ERROR,
+                    seq_num,
+                    0,
+                    b"Transferencia abortada por reintentos de FIN.")
                 transport.send(err_pkt, server_address)
                 return False
 
         return True
 
-    
     def receive(transport, destination_path, server_address):
         expected_seq = 0
         buffer = bytearray()
@@ -78,7 +86,8 @@ class StopAndWait:
             if packet is None:
                 consecutive_timeouts += 1
                 if consecutive_timeouts >= MAX_TRIES:
-                    print("Error: Conexión interrumpida, se superó el límite de timeouts.")
+                    print("Error: Conexión interrumpida, "
+                          "se superó el límite de timeouts.")
                     return False
                 continue
 
@@ -92,11 +101,13 @@ class StopAndWait:
                 ack_num = packet.seq_num
                 if packet.seq_num == expected_seq:
                     buffer.extend(packet.payload)
-                    packet_ack = Packet(Packet.OP_ACK, packet.seq_num, ack_num, b"")
+                    packet_ack = Packet(
+                        Packet.OP_ACK, packet.seq_num, ack_num, b"")
                     transport.send(packet_ack, address)
                     expected_seq += 1
                 elif packet.seq_num < expected_seq:
-                    packet_ack = Packet(Packet.OP_ACK, packet.seq_num, ack_num, b"")
+                    packet_ack = Packet(
+                        Packet.OP_ACK, packet.seq_num, ack_num, b"")
                     transport.send(packet_ack, address)
 
             elif packet.opcode == Packet.OP_FIN:
@@ -114,9 +125,11 @@ class StopAndWait:
                     for _ in range(MAX_TRIES):
                         extra_pkt, extra_addr = transport.receive()
                         if extra_pkt is None:
-                            # Si el timeout expira sin recibir nada, el emisor cerró con éxito.
+                            # Si el timeout expira sin recibir nada, el emisor
+                            # cerró con éxito.
                             break
-                        if extra_addr == server_address and extra_pkt.opcode == Packet.OP_FIN:
+                        if (extra_addr == server_address and
+                                extra_pkt.opcode == Packet.OP_FIN):
                             # Si vuelve a llegar el FIN, reenviamos el ACK.
                             transport.send(packet_ack, address)
 
