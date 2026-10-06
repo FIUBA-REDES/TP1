@@ -6,6 +6,7 @@ from lib.file_transfer_server import FileTransferServer
 import lib.args_verifier as args_verifier
 import logging
 
+
 def main():
     parser = argparse.ArgumentParser(description="File Transfer Server")
     group = parser.add_mutually_exclusive_group()

@@ -1,5 +1,5 @@
 import os
-from .protocol import Packet, ack
+from .protocol import Packet
 from .session import Session
 from .transport import UdpTransport
 from .stop_and_wait import StopAndWait
@@ -9,7 +9,6 @@ from threading import Lock
 
 
 class FileTransferServer:
-
 
     def __init__(self, host="127.0.0.1", port=5005,
                  timeout=None, storage_dir="storage"):
@@ -30,13 +29,10 @@ class FileTransferServer:
             with self.lock:
                 self.sessions.pop(session.client_address, None)
 
-
-
     def start(self):
         """Bind the server socket and prepare the receive loop."""
         self.transport.bind(*self.address)
         self.running = True
-
 
     def serve_forever(self):
         """Receive packets and dispatch them while the server is running."""
@@ -49,10 +45,7 @@ class FileTransferServer:
             if packet is not None:
                 self.handle_packet(packet, client_address)
 
-
-
-
-    def set_protocol_action_and_file_name_from_payload(self, payload_str):
+    def set_protocol_and_file_name_from_payload(self, payload_str):
 
         if payload_str.startswith("DOWNLOAD:"):
             parts = payload_str.split(":", 2)
@@ -94,14 +87,19 @@ class FileTransferServer:
             self.executor.submit(client_session.process_packets)
             return
 
-        req_protocol, file_name = self.set_protocol_action_and_file_name_from_payload(payload_str)
+        req_protocol, file_name = self.set_protocol_and_file_name_from_payload(
+            payload_str)
 
         # 1. Si es solicitud de DOWNLOAD
         if payload_str.startswith("DOWNLOAD:"):
 
             file_path = os.path.join(self.storage_dir, file_name)
             if not os.path.isfile(file_path):
-                err_pkt = Packet(Packet.OP_ERROR, packet.seq_num, 0, b"Archivo no encontrado")
+                err_pkt = Packet(
+                    Packet.OP_ERROR,
+                    packet.seq_num,
+                    0,
+                    b"Archivo no encontrado")
                 self.transport.send(err_pkt, client_address)
                 del self.sessions[client_address]
                 return
@@ -119,15 +117,12 @@ class FileTransferServer:
             return
 
         # 2. Si es solicitud de UPLOAD
-        # Los paquetes llegan via enqueue() → process_packets() los ensambla y guarda
+        # Los paquetes llegan via enqueue() → process_packets() los ensambla y
+        # guarda
         client_session.remote_name = file_name
         client_session.start_session(packet)
         self.executor.submit(client_session.process_packets)
         return
-
-
-
-
 
     def handle_packet(self, packet, client_address):
         """Register a new client and dispatch its packet."""
@@ -140,13 +135,13 @@ class FileTransferServer:
 
             # 2. Si es un cliente nuevo iniciando conexión
             if packet.opcode == Packet.OP_START:
-                self.verify_and_execute_type_of_new_packet(packet, client_address)
+                self.verify_and_execute_type_of_new_packet(
+                    packet, client_address)
                 return
-            
 
     def _worker_task(self, transport, action,
                      protocol, path, client_address):
-        """Ejecuta el protocolo de DOWNLOAD en un hilo separado con un socket propio."""
+        """Ejecuta el protocolo de DOWNLOAD en un hilo separado"""
         sender_transport = UdpTransport(timeout=1.0)
         try:
             if protocol == "sw":

@@ -5,6 +5,7 @@ MAX_TRIES = 5
 FIN_TIMEOUT = 0.5  # Tiempo de espera para recibir un ACK del FIN
 CHUNK_SIZE = 1024  # Tamaño de cada chunk de datos a enviar
 
+
 class StopAndWait:
 
     def send(transport, file_path, server_address):
@@ -102,7 +103,8 @@ class StopAndWait:
             # Reiniciamos el contador porque llegó un paquete válido
             consecutive_timeouts = 0
 
-            # Validamos que provenga de la misma IP (ignora si el servidor cambió de puerto)
+            # Validamos que provenga de la misma IP (ignora si el servidor
+            # cambió de puerto)
             if address[0] != server_address[0]:
                 continue
             # Fijamos la dirección activa al socket emisor real

@@ -50,14 +50,20 @@ def verify_client_args(args):
 
     if hasattr(args, "src") and args.src is not None:
         if os.path.isdir(args.src):
-            logging.error(f"Error: The source path '{args.src}' is a directory.")
+            logging.error(
+                f"Error: The source path '{
+                    args.src}' is a directory.")
             return False
         if os.path.isfile(args.src) is False:
-            logging.error(f"Error: The source file '{args.src}' does not exist.")
+            logging.error(
+                f"Error: The source file '{
+                    args.src}' does not exist.")
             return False
     elif hasattr(args, "dst") and args.dst is not None:
         if os.path.isdir(args.dst):
-            logging.error(f"Error: The destination path '{args.dst}' is a directory.")
+            logging.error(
+                f"Error: The destination path '{
+                    args.dst}' is a directory.")
             return False
         destination_directory = os.path.dirname(args.dst) or "."
         if not os.path.isdir(destination_directory):

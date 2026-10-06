@@ -1,5 +1,4 @@
 import os
-import time
 import logging
 from queue import Queue, Empty
 from .protocol import Packet
@@ -10,7 +9,8 @@ TIMEOUT = 5
 class Session:
     """State and packet handling for one client transfer."""
 
-    def __init__(self, transport, client_address, storage_dir=None, on_close=None):
+    def __init__(self, transport, client_address,
+                 storage_dir=None, on_close=None):
         self.transport = transport
         self.client_address = client_address
         self.storage_dir = storage_dir
@@ -55,6 +55,7 @@ class Session:
             ),
             self.client_address
         )
+
     def enqueue(self, packet):
         self.packets.put(packet)
 

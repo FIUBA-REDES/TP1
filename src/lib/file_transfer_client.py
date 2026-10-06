@@ -50,7 +50,7 @@ class FileTransferClient:
                     ack_packet.payload.decode(
                         "utf-8",
                         errors="replace"
-                    )  
+                    )
                 )
                 self.connected = False
                 return False
@@ -66,8 +66,8 @@ class FileTransferClient:
             if (StopAndWait.send(self.transport, source_path,
                                  self.server_address)) is False:
                 logging.error("Error: Failed to send the file "
-                      "using Stop-and-Wait protocol."
-                )
+                              "using Stop-and-Wait protocol."
+                              )
                 return
             else:
                 logging.info(
@@ -79,13 +79,13 @@ class FileTransferClient:
             if not SelectiveRepeat.send(
                     self.transport, source_path, self.server_address):
                 logging.error("Error: Failed to send the file "
-                      "using Selective Repeat protocol.")
+                              "using Selective Repeat protocol.")
                 return
             else:
                 logging.info(
                     f"File '{source_path}' sent successfully "
                     "using Selective Repeat protocol."
-                    )
+                )
         else:
             raise ValueError(
                 "Invalid protocol specified. Choose 'sw' or 'sack'.")
@@ -100,13 +100,13 @@ class FileTransferClient:
             if StopAndWait.receive(self.transport, destination_path,
                                    self.server_address) is False:
                 logging.error("Error: Failed to receive the file "
-                      "using Stop-and-Wait protocol.")
+                              "using Stop-and-Wait protocol.")
                 return
             else:
                 logging.info(
                     f"File '{destination_path}' received successfully "
                     "using Stop-and-Wait protocol."
-                    )
+                )
 
         elif protocol == "sack":
             if not self.connect("DOWNLOAD:sack:" + remote_name):
@@ -115,13 +115,13 @@ class FileTransferClient:
             if not SelectiveRepeat.receive(
                     self.transport, destination_path, self.server_address):
                 logging.error("Error: Failed to receive the file using "
-                      "Selective Repeat protocol.")
+                              "Selective Repeat protocol.")
                 return
             else:
                 logging.info(
                     f"File '{destination_path}' received successfully "
                     "using Selective Repeat protocol."
-                    )
+                )
         else:
             raise ValueError(
                 "Invalid protocol specified. Choose 'sw' or 'sack'.")
