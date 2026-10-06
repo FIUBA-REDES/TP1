@@ -5,7 +5,7 @@
 - [x] Implementar serialización `encode()` y deserialización `decode()`.
 - [x] Opcodes básicos definidos: `OP_START`, `OP_DATA`, `OP_ACK`, `OP_FIN`, `OP_ERROR`.
 - [x] Soporte para envío y recepción transparente de archivos binarios.
-- [ ] Flujo de errores: contemplar y validar al menos 2 condiciones de error explícitas (ej: archivo remoto no encontrado, timeouts excedidos, etc.).
+- [x] Flujo de errores: validación de archivo inexistente en descarga y aborto por reintentos con `OP_ERROR`.
 
 ## 2. Mecanismos de Transferencia Confiable (RDT)
 
@@ -15,50 +15,49 @@
 - [x] Envío y confirmación de `OP_FIN` para cierre de transferencia.
 - [x] Manejo de duplicados y orden de secuencia.
 - [x] Receptor Stop & Wait con escritura directa en disco.
+- [x] Espera `TIME_WAIT` al confirmar el FIN para retransmitir ACK si se pierde.
 
 ### TCP con SACK (`src/lib/sack.py`)
-- [ ] Implementar la ventana deslizante (sliding window) en el emisor.
-- [ ] Implementar en el receptor el seguimiento de paquetes fuera de orden y generación de bloques SACK.
-- [ ] Retransmisión selectiva de paquetes perdidos (evitando retransmitir datos ya confirmados).
+- [x] Ventana deslizante (sliding window) en emisor (`WINDOW_SIZE = 32`).
+- [x] Seguimiento de bloques fuera de orden y generación de SACK en receptor.
+- [x] Retransmisión selectiva de paquetes perdidos.
 - [x] Soportar RTTs de hasta 300 ms.
-- [ ] Cumplir requisito crítico: transferir 5 MB en < 2 minutos con 10% de pérdida y 40 ms de RTT.
+- [x] Validar algorítmicamente en test unitario: 5 MB en < 2 min con 10% de pérdida y 40 ms RTT.
 
 ## 3. Clientes y Servidor Concurrente
 
 ### CLI y Parámetros (`src/lib/args_verifier.py`, `upload`, `download`, `start-server`)
 - [x] Parser de argumentos CLI respetando flags de consigna (`-v`, `-q`, `-H`, `-p`, `-s`, `-d`, `-n`, `-r`).
 - [x] Validaciones de puerto, existencia de archivo local y parámetros requeridos.
-- [ ] Corregir opciones de protocolo: cambiar `go-back-n` / `selective-repeat` por `sack`.
+- [x] Protocolos normalizados a `sw` y `sack`.
+- [ ] Conectar flags `-v` y `-q` con la librería estándar `logging` (reemplazar prints fijos).
 
 ### Servidor (`src/lib/file_transfer_server.py`, `src/lib/session.py`)
 - [x] Servidor concurrente con `ThreadPoolExecutor`.
-- [x] Gestión de sesiones por cliente (`Session`) y reensamblado de datos en buffer.
-- [x] Guardado en disco con `--storage` / `storage_dir`.
+- [x] Gestión de sesiones por cliente (`Session`) y guardado en disco con `--storage`.
 - [x] Soporte de UPLOAD y DOWNLOAD en el servidor usando Stop & Wait.
-- [ ] Integrar el servidor con el protocolo SACK.
-- [ ] Limpieza automática de sesiones terminadas o abandonadas por timeout.
+- [x] Soporte dinámico de DOWNLOAD con protocolo SACK (`SelectiveRepeat`).
+- [ ] Limpieza automática de sesiones terminadas o abandonadas por timeout en el servidor.
 
 ### Cliente (`src/lib/file_transfer_client.py`)
 - [x] Handshake `OP_START` para inicio de conexión.
-- [x] Subida (`upload`) con Stop & Wait.
-- [x] Descarga (`download`) con Stop & Wait.
-- [ ] Integrar cliente con SACK para subida y descarga.
+- [x] Subida (`upload`) con Stop & Wait y SACK.
+- [x] Descarga (`download`) con Stop & Wait y SACK (notificando el protocolo al servidor).
 
 ## 4. Pruebas y Mininet
-- [x] Suite de tests unitarios/integración en `tests/` para Stop & Wait y concurrencia.
-- [X] Configuración del script/entorno de topología en Mininet.
-- [X] Pruebas con enlace al 10% de pérdida en ambos sentidos.
-- [ ] Pruebas con RTT de 40 ms
-- [ ] Captura de tráfico con Wireshark (`.pcap`) para verificar que SACK no retransmita datos redundantes.
+- [x] Suite de tests automatizados en `tests/` (SACK, Stop & Wait, Concurrencia y Archivos Grandes).
+- [x] Configuración del script/entorno de topología en Mininet (`topologia.py`).
+- [ ] Ejecutar prueba de 5 MB con SACK en Mininet real (validar < 2 min con `tc,loss=10,delay=20ms`).
+- [ ] Captura de tráfico con Wireshark (`.pcap`) usando el dissector Lua para verificar ausencia de retransmisiones redundantes.
 
 ## 5. Mediciones y Análisis (Sección 4 del enunciado)
-- [ ] Medir tiempos de transferencia de Stop & Wait vs. SACK.
+- [ ] Medir tiempos de transferencia de Stop & Wait vs. SACK en Mininet.
 - [ ] Probar con al menos 3 tamaños distintos de archivo.
-- [ ] Variar tasas de pérdida y calcular el Throughput promedio para cada caso.
+- [ ] Calcular Throughput promedio para cada caso.
 
 ## 6. Informe y Entrega Final
 - [ ] Responder las 6 preguntas teóricas del enunciado.
-- [ ] Redactar las secciones obligatorias del `informe.pdf` (Introducción, Hipótesis, Implementación, Pruebas, Dificultades, Conclusión).
-- [ ] Pasar el linter `flake8` para asegurar cumplimiento de PEP8.
-- [ ] Documentar en `README.md` los comandos exactos de ejecución.
+- [ ] Redactar las secciones obligatorias de `informe.pdf` (Introducción, Hipótesis, Implementación, Pruebas, Dificultades, Conclusión).
+- [x] Pasar linter `flake8` para cumplimiento de PEP 8.
+- [ ] Agregar al `README.md` los ejemplos concretos de invocación de `start-server`, `upload` y `download`.
 - [ ] Generar archivo `tp2.zip` con la estructura requerida.
